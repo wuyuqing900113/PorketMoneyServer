@@ -37,6 +37,10 @@
         <pmd.version>7.26.0</pmd.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
+
+        <!-- ==== M1 集成测试依赖（roadmap M1 DoD：RestAssured / Testcontainers） ====
+             Testcontainers 版本随 Boot BOM 管理（2.0.5）；2.x 工件更名为 testcontainers-* -->
+        <rest-assured.version>6.0.1</rest-assured.version>
     </properties>
 
     <dependencies>
@@ -61,6 +65,17 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
+        <!-- 认证授权：Spring Security（Boot 4 / Security 7，M1 引入） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- JWT 签发与校验：Nimbus JOSE（版本随 Spring Security BOM 管理） -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+
         <!-- ORM：MyBatis（版本需 spike 确认 Boot 4 兼容性） -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
@@ -68,7 +83,13 @@
             <version>${mybatis-spring-boot.version}</version>
         </dependency>
 
-        <!-- 数据库迁移：Flyway -->
+        <!-- 数据库迁移：Flyway。Boot 4 起自动配置模块化拆分，
+             仅引 flyway-core 不会触发自动装配，必须显式引入
+             spring-boot-flyway（T4 集成测试空库问题排查实证） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -118,12 +139,36 @@
             <scope>test</scope>
         </dependency>
         <!-- Flyway 12.x 的 H2 支持内置于 flyway-core（无独立 database 模块），
-             由 SmokeIntegrationTest 实际验证 -->
+             由 AuthFlowH2IntegrationTest 走真实迁移链路实际验证 -->
         <!-- 架构守护：模块分层依赖规则 -->
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- API 集成测试：RestAssured（roadmap M1 DoD） -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>${rest-assured.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- 数据库集成测试：Testcontainers + 真实 PostgreSQL 18（M1 设计 §12.2；
+             Boot BOM 管理 testcontainers-bom 2.0.5，2.x 工件更名为 testcontainers-*） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

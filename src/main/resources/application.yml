@@ -5,6 +5,8 @@
 # ============================================================
 server:
   port: ${SERVER_PORT:8080}
+  # 生产部署于 SLB 之后：还原代理层的 scheme / client-ip（M1 设计 §8.4）
+  forward-headers-strategy: native
 
 spring:
   application:
@@ -16,8 +18,8 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/pocket_money}
-    username: ${DB_USERNAME:pocket}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}
+    username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
     # HikariCP 参数基线：面向 10 TPS 场景，宁小勿大（M0 设计 §8.4）
     hikari:
@@ -52,3 +54,19 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+# ============================================================
+# M1 安全与加密配置（M1-detailed-design.md §11）
+# 敏感密钥一律环境变量注入，无默认值 —— 缺失即启动失败（fail-fast）
+# ============================================================
+pocket-money:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:}
+      access-ttl: ${JWT_ACCESS_TTL:PT15M}
+      refresh-ttl: ${JWT_REFRESH_TTL:P14D}
+    login-guard:
+      max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+      lock-duration: ${LOGIN_LOCK_DURATION:PT15M}
+  crypto:
+    data-key: ${DATA_ENCRYPTION_KEY:}

@@ -11,8 +11,13 @@
     </description>
 
     <!-- ==== errorprone ==== -->
-    <!-- 禁止空 catch 块吞异常（code-style-guide §8，tech-stack 禁止项） -->
-    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <!-- 禁止空 catch 块吞异常（code-style-guide §8，tech-stack 禁止项）；
+         带解释性注释的刻意静默（如登出幂等，M1 设计 §5.3）不属静默吞异常 -->
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <properties>
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
+    </rule>
     <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
     <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
     <rule ref="category/java/errorprone.xml/UnconditionalIfStatement"/>

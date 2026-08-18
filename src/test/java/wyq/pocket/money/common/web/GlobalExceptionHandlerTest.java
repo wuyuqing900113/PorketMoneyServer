@@ -15,7 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +37,8 @@ import jakarta.validation.constraints.NotNull;
 import wyq.pocket.money.common.exception.BusinessException;
 
 /**
- * 全局异常处理器测试：standalone MockMvc 验证异常 → Result 映射（M0 设计 §6.3）。
+ * 全局异常处理器测试：standalone MockMvc 验证异常 → Result 映射
+ * （M0 设计 §6.3；M1 设计 §4.8 Security 异常映射）。
  */
 class GlobalExceptionHandlerTest {
 
@@ -121,10 +125,32 @@ class GlobalExceptionHandlerTest {
         assertThat(result.message()).contains("amount").contains("不能为空");
     }
 
+    @Test
+    void accessDeniedShouldReturn403With100004() throws Exception {
+        JsonNode node = performExpecting(get("/test/denied"), status().isForbidden());
+
+        assertThat(node.get("code").asInt()).isEqualTo(100004);
+        assertThat(node.get("message").asText()).isEqualTo("无权限执行该操作");
+    }
+
+    @Test
+    void authenticationExceptionShouldReturn401With100003() throws Exception {
+        JsonNode node = performExpecting(get("/test/unauthenticated"), status().isUnauthorized());
+
+        assertThat(node.get("code").asInt()).isEqualTo(100003);
+        assertThat(node.get("message").asText()).isEqualTo("未认证或登录态失效");
+    }
+
     private JsonNode perform(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
             throws Exception {
+        return performExpecting(request, status().isOk());
+    }
+
+    private JsonNode performExpecting(
+            org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request,
+            ResultMatcher statusMatcher) throws Exception {
         String body = mockMvc.perform(request)
-                .andExpect(status().isOk())
+                .andExpect(statusMatcher)
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         return objectMapper.readTree(body);
     }
@@ -158,6 +184,16 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/internal")
         Result<Void> internal() {
             throw new IllegalStateException("boom");
+        }
+
+        @GetMapping("/test/denied")
+        Result<Void> denied() {
+            throw new AccessDeniedException("not allowed");
+        }
+
+        @GetMapping("/test/unauthenticated")
+        Result<Void> unauthenticated() {
+            throw new BadCredentialsException("bad credentials");
         }
 
         @PostMapping("/test/valid")

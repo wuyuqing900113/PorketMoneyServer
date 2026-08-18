@@ -22,7 +22,9 @@ import wyq.pocket.money.common.persistence.SystemHealthMapper;
 @SpringBootTest(properties = {
         "DB_URL=jdbc:h2:mem:pocket_money;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
         "DB_USERNAME=sa",
-        "DB_PASSWORD="
+        "DB_PASSWORD=",
+        "JWT_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 })
 class SmokeIntegrationTest {
 

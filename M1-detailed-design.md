@@ -716,8 +716,8 @@ server:
 | spring-boot-starter-security | 随 Boot 4.1.0 | compile | 认证授权框架 |
 | spring-security-oauth2-jose | 随 Boot BOM | compile | JWT 签发/校验（Nimbus） |
 | spring-boot-testcontainers | 随 Boot 4.1.0 | test | `@ServiceConnection` |
-| org.testcontainers:postgresql / junit-jupiter | `testcontainers.version`（目标 1.21.x，spike 锁定） | test | PG 容器化集成测试 |
-| io.rest-assured:rest-assured | `rest-assured.version`（目标 5.5.x，spike 锁定） | test | API 集成测试 |
+| org.testcontainers:testcontainers-postgresql / testcontainers-junit-jupiter | 随 Boot BOM（**2.0.5**，spike S4 锁定） | test | PG 容器化集成测试；**2.x 工件更名**（原 postgresql / junit-jupiter），`PostgreSQLContainer` 不再是泛型类 |
+| io.rest-assured:rest-assured | `rest-assured.version`（**6.0.1**，spike S3 锁定） | test | API 集成测试；不在 Boot BOM 管理范围，显式版本属性 |
 
 ## 附录 B：权限矩阵（PermissionMatrixIT 的基准）
 
