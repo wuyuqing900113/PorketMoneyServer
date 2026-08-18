@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="pocket-money-rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        零花钱管理系统 PMD 规则集（PMD 7）。
+        对齐 code-style-guide.md 与 tech-stack.md：
+        禁止空 catch、圈复杂度 ≤ 5、未使用代码清理、松耦合签名。
+    </description>
+
+    <!-- ==== errorprone ==== -->
+    <!-- 禁止空 catch 块吞异常（code-style-guide §8，tech-stack 禁止项） -->
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
+    <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
+    <rule ref="category/java/errorprone.xml/UnconditionalIfStatement"/>
+    <!-- PMD 7 中 DoNotCallSystemExit 更名为 DoNotTerminateVM -->
+    <rule ref="category/java/errorprone.xml/DoNotTerminateVM"/>
+
+    <!-- ==== bestpractices ==== -->
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/MissingOverride"/>
+    <rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>
+    <!-- 方法签名使用接口类型（List 而非 ArrayList 等） -->
+    <rule ref="category/java/bestpractices.xml/LooseCoupling"/>
+    <rule ref="category/java/bestpractices.xml/ArrayIsStoredDirectly"/>
+    <rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray"/>
+
+    <!-- ==== design ==== -->
+    <!-- 圈复杂度 ≤ 5（tech-stack.md §1），方法复杂度 ≥ 6 即报告；
+         PMD 7 中属性由 reportLevel 拆分为 methodReportLevel / classReportLevel -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="6"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/java/design.xml/SimplifyBooleanReturns"/>
+</ruleset>

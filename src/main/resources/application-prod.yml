@@ -1,0 +1,16 @@
+# 生产环境：数据库连接信息全部由环境变量注入（无默认值，缺失即启动失败）
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+# 生产关闭 Swagger UI（M0 设计 §10.2），api-docs JSON 保留供内部工具使用
+springdoc:
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: info
+    wyq.pocket.money: info

@@ -1,0 +1,50 @@
+# ============================================================
+# 阿里云云效 Flow 流水线（参考定义，M0 设计 §12）
+# 接入时在云效控制台创建流水线并对照本文件配置；
+# 云效 Flow 的实际 YAML 字段以控制台模板为准，此处固化的是阶段与命令基线。
+# ============================================================
+
+pipeline:
+  name: PorketMoneyServer-M0-Build
+
+  sources:
+    - name: repo
+      type: codeup
+      # 触发：main push 全量执行；合并请求（MR）全量执行，门禁不通过禁止合入
+
+  stages:
+    # ---- 阶段 1：敏感信息扫描（M0 设计 §7.1） ----
+    - name: secret-scan
+      jobs:
+        - name: scan-hardcoded-secrets
+          steps:
+            - run: bash scripts/secret-scan.sh
+
+    # ---- 阶段 2：构建与质量门禁 ----
+    # 构建环境要求 JDK 25；云效公共集群若无对应镜像，
+    # 使用自定义构建镜像（JDK 25 + Maven 3.9.16，见 docs/version-matrix.md S9）
+    - name: build-and-verify
+      jobs:
+        - name: maven-verify
+          image: <jdk25-maven39-build-image>
+          cache:
+            - ~/.m2/repository   # Maven 依赖缓存，控制构建时长
+          steps:
+            - run: mvn -B -ntp clean verify
+          # mvn clean verify 已内联：单测 + JaCoCo(≥80%) + Checkstyle + PMD + SpotBugs
+          # 任一门禁失败 → 阶段失败 → MR 禁止合入
+
+    # ---- 阶段 3：云效自带代码检测（与阶段 2 并行） ----
+    - name: code-inspection
+      jobs:
+        - name: yunxiao-code-check
+          component: 代码检测   # 云效平台自带安全/规范扫描，无阻断级问题方可通过
+
+    # ---- 阶段 4：制品归档（M7 前不构建镜像） ----
+    - name: archive
+      jobs:
+        - name: archive-jar
+          steps:
+            - upload: target/*.jar
+
+  # SonarQube 门禁：M6 前接入（决策 D8），接入后在此追加 sonar 阶段

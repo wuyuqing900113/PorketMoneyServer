@@ -1,0 +1,6 @@
+# 开发环境：数据库连接信息全部由环境变量注入（无默认值，缺失即启动失败）
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}

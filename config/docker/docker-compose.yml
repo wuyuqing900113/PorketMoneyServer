@@ -1,0 +1,24 @@
+# 本地开发 PostgreSQL 18（M0 设计 §8.1）
+# 启动：docker compose -f config/docker/docker-compose.yml up -d
+# 凭据可通过同目录 .env 覆盖（.env 已加入 .gitignore，模板见 .env.example）
+# 注意：此处默认凭据仅限本机开发，任何真实环境凭据一律走环境变量注入
+services:
+  postgres:
+    image: postgres:18
+    container_name: pocket-money-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pocket_money}
+      POSTGRES_USER: ${DB_USER:-pocket}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pocket_local_only}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pocket} -d ${DB_NAME:-pocket_money}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

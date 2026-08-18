@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(mvn *)",
+      "PowerShell(docker info *)",
+      "PowerShell($csv = Import-Csv \"D:\\\\work\\\\PorketMoneyServer\\\\target\\\\site\\\\jacoco\\\\jacoco.csv\"; $missed = \\($csv | Measure-Object -Property LINE_MISSED -Sum\\).Sum; $covered = \\($csv | Measure-Object -Property LINE_COVERED -Sum\\).Sum; Write-Output \\(\"行覆盖率: {0:P1} \\(覆盖 {1} / 总计 {2} 行\\)\" -f \\($covered / \\($covered + $missed\\)\\), $covered, \\($covered + $missed\\)\\); $csv | ForEach-Object { \"{0}: {1}/{2}\" -f $_.CLASS, $_.LINE_COVERED, \\([int]$_.LINE_COVERED + [int]$_.LINE_MISSED\\) })"
+    ]
+  }
+}

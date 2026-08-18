@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SpotBugs 定点豁免清单：仅收录经人工评审确认的误报。
+     新增条目必须在注释中写明理由，禁止整体豁免某类模式。 -->
+<FindBugsFilter>
+    <!-- HRS_REQUEST_PARAMETER_TO_HTTP_HEADER @ TraceIdFilter：
+         外部传入的 X-Trace-Id 已经过 TraceIds.isAcceptable 白名单校验
+         （仅允许 [A-Za-z0-9_-]{1,64}），CR/LF 等响应头注入字符不可能通过；
+         校验失败时重新生成安全 ID。SpotBugs 数据流分析无法识别该校验，
+         属已知误报；防护行为由测试用例 shouldRejectCrlfInjectionAttempt 固化。 -->
+    <Match>
+        <Class name="wyq.pocket.money.common.trace.TraceIdFilter"/>
+        <Bug pattern="HRS_REQUEST_PARAMETER_TO_HTTP_HEADER"/>
+    </Match>
+</FindBugsFilter>
