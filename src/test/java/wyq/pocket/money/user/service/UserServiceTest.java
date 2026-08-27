@@ -25,6 +25,7 @@ import wyq.pocket.money.user.domain.User;
 import wyq.pocket.money.user.dto.ChangePasswordRequest;
 import wyq.pocket.money.user.dto.UpdateNicknameRequest;
 import wyq.pocket.money.user.dto.UserMeResponse;
+import wyq.pocket.money.user.mapper.FamilyMemberMapper;
 import wyq.pocket.money.user.mapper.UserMapper;
 
 /**
@@ -41,10 +42,12 @@ class UserServiceTest {
 
     private final AuditService auditService = mock(AuditService.class);
 
+    private final FamilyMemberMapper familyMemberMapper = mock(FamilyMemberMapper.class);
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
 
     private final UserService service = new UserService(userMapper, passwordEncoder,
-            refreshTokenService, auditService);
+            refreshTokenService, auditService, familyMemberMapper);
 
     private final UserIdPrincipal parentPrincipal =
             new UserIdPrincipal(7L, 5L, User.ROLE_PARENT, false);

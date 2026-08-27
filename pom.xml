@@ -41,6 +41,10 @@
         <!-- ==== M1 集成测试依赖（roadmap M1 DoD：RestAssured / Testcontainers） ====
              Testcontainers 版本随 Boot BOM 管理（2.0.5）；2.x 工件更名为 testcontainers-* -->
         <rest-assured.version>6.0.1</rest-assured.version>
+
+        <!-- ==== M2 性能基准（设计 §15）：performance 标签默认排除 ====
+             手动启用：mvn test -Dgroups=performance "-Dsurefire.excludedGroups=" -->
+        <surefire.excludedGroups>performance</surefire.excludedGroups>
     </properties>
 
     <dependencies>
@@ -178,6 +182,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Surefire：@Tag("performance") 性能基准测试默认排除（M2 设计 §15），
+                 版本随 Boot BOM 管理；手动启用见 surefire.excludedGroups 属性注释 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                </configuration>
             </plugin>
 
             <!-- 构建基线锁定：JDK 25 / Maven 3.9.16+ -->

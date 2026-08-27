@@ -42,4 +42,18 @@ public class FamilyAccessChecker {
                     "FAMILY_ACCESS_DENIED user=" + userId + " targetFamily=" + familyId);
         }
     }
+
+    /**
+     * 判断用户是否为目标家庭的在册成员（不抛异常版本）。
+     *
+     * <p>供定时任务等无请求主体场景使用（M2 结算前成员校验）。
+     *
+     * @param familyId 目标家庭 ID
+     * @param userId   用户 ID
+     * @return 是在册成员返回 true
+     */
+    public boolean isMember(long familyId, long userId) {
+        Long actualFamilyId = familyMemberMapper.findFamilyIdByUserId(userId);
+        return actualFamilyId != null && actualFamilyId == familyId;
+    }
 }

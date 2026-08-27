@@ -2,6 +2,7 @@ package wyq.pocket.money.user.service;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import wyq.pocket.money.user.dto.ResetChildPasswordRequest;
 import wyq.pocket.money.user.dto.UpdateFamilyRequest;
 import wyq.pocket.money.user.dto.UpdateNicknameRequest;
 import wyq.pocket.money.user.dto.UserErrorCode;
+import wyq.pocket.money.user.event.MemberRemovedEvent;
 import wyq.pocket.money.user.mapper.FamilyMapper;
 import wyq.pocket.money.user.mapper.FamilyMemberMapper;
 import wyq.pocket.money.user.mapper.UserMapper;
@@ -54,6 +56,8 @@ public class FamilyService {
 
     private final FamilyAccessChecker familyAccessChecker;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     /**
      * 注入协作对象。
      *
@@ -64,11 +68,13 @@ public class FamilyService {
      * @param refreshTokenService 令牌服务
      * @param auditService        审计服务
      * @param familyAccessChecker 数据级访问守卫
+     * @param eventPublisher      领域事件发布器（M2 成员移除联动）
      */
     public FamilyService(FamilyMapper familyMapper, FamilyMemberMapper familyMemberMapper,
                          UserMapper userMapper, PasswordEncoder passwordEncoder,
                          RefreshTokenService refreshTokenService, AuditService auditService,
-                         FamilyAccessChecker familyAccessChecker) {
+                         FamilyAccessChecker familyAccessChecker,
+                         ApplicationEventPublisher eventPublisher) {
         this.familyMapper = familyMapper;
         this.familyMemberMapper = familyMemberMapper;
         this.userMapper = userMapper;
@@ -76,6 +82,7 @@ public class FamilyService {
         this.refreshTokenService = refreshTokenService;
         this.auditService = auditService;
         this.familyAccessChecker = familyAccessChecker;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -205,7 +212,8 @@ public class FamilyService {
 
     /**
      * 移除成员（§6.4 #15，仅家长）：创建者不可移除（200012）；
-     * 移除孩子 = 删成员关系 + 吊销全部 refresh + 置 DISABLED + 审计。
+     * 移除孩子 = 删成员关系 + 吊销全部 refresh + 置 DISABLED + 审计，
+     * 并发布 {@link MemberRemovedEvent}（M2：冻结账户 / 取消任务 / 暂停规则）。
      *
      * @param familyId     家庭 ID
      * @param targetUserId 目标成员用户 ID
@@ -227,6 +235,7 @@ public class FamilyService {
         userMapper.updateStatus(targetUserId, User.STATUS_DISABLED);
         auditService.record(new AuditEntry(principal.userId(), AuditAction.MEMBER_REMOVE,
                 "USER", String.valueOf(targetUserId), null));
+        eventPublisher.publishEvent(new MemberRemovedEvent(familyId, targetUserId));
     }
 
     private Family requireFamily(long familyId) {

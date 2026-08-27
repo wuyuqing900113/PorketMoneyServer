@@ -4,7 +4,12 @@
       "PowerShell(mvn *)",
       "PowerShell(docker info *)",
       "PowerShell($csv = Import-Csv \"D:\\\\work\\\\PorketMoneyServer\\\\target\\\\site\\\\jacoco\\\\jacoco.csv\"; $missed = \\($csv | Measure-Object -Property LINE_MISSED -Sum\\).Sum; $covered = \\($csv | Measure-Object -Property LINE_COVERED -Sum\\).Sum; Write-Output \\(\"行覆盖率: {0:P1} \\(覆盖 {1} / 总计 {2} 行\\)\" -f \\($covered / \\($covered + $missed\\)\\), $covered, \\($covered + $missed\\)\\); $csv | ForEach-Object { \"{0}: {1}/{2}\" -f $_.CLASS, $_.LINE_COVERED, \\([int]$_.LINE_COVERED + [int]$_.LINE_MISSED\\) })",
-      "PowerShell($jar = 'C:\\\\Users\\\\wuyuqing\\\\.m2\\\\repository\\\\org\\\\springframework\\\\security\\\\spring-security-oauth2-jose\\\\7.1.0\\\\spring-security-oauth2-jose-7.1.0.jar'; $javap = 'C:\\\\Program Files\\\\Java\\\\jdk-25.0.3\\\\bin\\\\javap.exe'; & $javap -cp $jar org.springframework.security.oauth2.jose.jws.JwsHeader | Select-String -Pattern 'with|build'; '---ENCODER---'; & $javap -cp $jar org.springframework.security.oauth2.jwt.NimbusJwtEncoder | Select-String -Pattern 'public'; '---DECODER---'; & $javap -cp $jar org.springframework.security.oauth2.jwt.NimbusJwtDecoder | Select-String -Pattern 'public static|macAlgorithm|build')"
+      "PowerShell($jar = 'C:\\\\Users\\\\wuyuqing\\\\.m2\\\\repository\\\\org\\\\springframework\\\\security\\\\spring-security-oauth2-jose\\\\7.1.0\\\\spring-security-oauth2-jose-7.1.0.jar'; $javap = 'C:\\\\Program Files\\\\Java\\\\jdk-25.0.3\\\\bin\\\\javap.exe'; & $javap -cp $jar org.springframework.security.oauth2.jose.jws.JwsHeader | Select-String -Pattern 'with|build'; '---ENCODER---'; & $javap -cp $jar org.springframework.security.oauth2.jwt.NimbusJwtEncoder | Select-String -Pattern 'public'; '---DECODER---'; & $javap -cp $jar org.springframework.security.oauth2.jwt.NimbusJwtDecoder | Select-String -Pattern 'public static|macAlgorithm|build')",
+      "mcp__idea__list_directory_tree",
+      "Bash(mvn test *)",
+      "Bash(mvn clean *)",
+      "Bash(python -c ' *)",
+      "Bash(cd *)"
     ]
   }
 }

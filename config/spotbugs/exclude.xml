@@ -44,6 +44,15 @@
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 
+    <!-- EI_EXPOSE_REP2：同上 —— M2 业务模块（money / rule / finance）
+         service（含 service.event 监听器）、controller、job 构造注入的
+         协作者同样一律为容器级单例（MyBatis Mapper 代理、@Service/@Component、
+         Clock），注入后仅调用其方法、不修改其状态，同一惯例下的误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.(money|rule|finance)\.(service|controller|job)\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
     <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：FamilyDetailResponse 为响应 DTO
          record，紧凑构造器已用 List.copyOf 固化成员列表（构造后不可变），
          外部调用方无法再改写内部状态，访问器返回的是不可变快照。
@@ -55,6 +64,67 @@
     </Match>
     <Match>
         <Class name="wyq.pocket.money.user.dto.FamilyDetailResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：同 FamilyDetailResponse 模式 ——
+         以下 M2 响应 DTO record 的紧凑构造器已用 List.copyOf / Map.copyOf
+         固化集合组件（构造后不可变），访问器返回的是不可变快照。
+         SpotBugs 无法识别 record 内的防御性拷贝，两条均为确定性误报。 -->
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.DashboardResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.DashboardResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.LeaderboardResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.LeaderboardResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.LearningTaskPageResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.LearningTaskPageResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.TransactionPageResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.TransactionPageResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.TrendResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.money.dto.TrendResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.rule.dto.RuleDetailResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.rule.dto.RuleDetailResponse"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.finance.dto.IncomeExpenseReportResponse"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="wyq.pocket.money.finance.dto.IncomeExpenseReportResponse"/>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 

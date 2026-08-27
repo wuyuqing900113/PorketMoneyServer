@@ -48,5 +48,55 @@ public enum AuditAction {
     CHILD_UPDATE,
 
     /** 移除家庭成员。 */
-    MEMBER_REMOVE
+    MEMBER_REMOVE,
+
+    // ---- M2 零花钱域动作（M2-detailed-design.md §9） ----
+
+    /** 手动存入。 */
+    MONEY_DEPOSIT,
+
+    /** 手动取出。 */
+    MONEY_WITHDRAW,
+
+    /** 包月规则创建。 */
+    RULE_CREATE,
+
+    /** 包月规则修改。 */
+    RULE_UPDATE,
+
+    /** 包月规则暂停。 */
+    RULE_PAUSE,
+
+    /** 包月规则恢复。 */
+    RULE_RESUME,
+
+    /** 包月规则归档。 */
+    RULE_ARCHIVE,
+
+    /** 包月规则删除（无发放记录时）。 */
+    RULE_DELETE,
+
+    /** 包月规则发放执行（定时结算）。 */
+    RULE_GRANT_EXECUTED,
+
+    /** 学习任务创建。 */
+    LEARNING_TASK_CREATE,
+
+    /** 学习任务提交。 */
+    LEARNING_TASK_SUBMIT,
+
+    /** 学习任务通过并发放奖励。 */
+    LEARNING_TASK_APPROVE,
+
+    /** 学习任务驳回。 */
+    LEARNING_TASK_REJECT,
+
+    /** 学习任务取消（发放前）。 */
+    LEARNING_TASK_CANCEL,
+
+    /** 工作价值记录（父母工资入账）。 */
+    WORK_VALUE_RECORD,
+
+    /** 对账发现余额/流水不一致（伴随 SECURITY ERROR 告警）。 */
+    RECONCILE_MISMATCH
 }

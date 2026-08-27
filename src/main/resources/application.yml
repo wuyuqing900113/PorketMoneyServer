@@ -20,7 +20,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:}
+    password: ${DB_PASSWORD:12345678}
     # HikariCP 参数基线：面向 10 TPS 场景，宁小勿大（M0 设计 §8.4）
     hikari:
       maximum-pool-size: 10
@@ -62,11 +62,26 @@ springdoc:
 pocket-money:
   security:
     jwt:
-      secret: ${JWT_SECRET:}
+      secret: ${JWT_SECRET:wPvsmgpqv5UI6Eg1XDYd7ndJvG9Sg9S9yMtnLMKwsIl50w/+k0fGHtLroqXvLQCuQnDEzzuoZO52rv6FBDEihg==}
       access-ttl: ${JWT_ACCESS_TTL:PT15M}
       refresh-ttl: ${JWT_REFRESH_TTL:P14D}
     login-guard:
       max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
       lock-duration: ${LOGIN_LOCK_DURATION:PT15M}
   crypto:
-    data-key: ${DATA_ENCRYPTION_KEY:}
+    data-key: ${DATA_ENCRYPTION_KEY:FSPwEaOq1XjrUGYj5ekUe8tx73cgu8pZfYbN1oKn8dA=}
+  # ============================================================
+  # M2 零花钱域配置（M2-detailed-design.md §13）
+  # cron 为 Spring 6 段式（秒 分 时 日 月 周）
+  # ============================================================
+  money:
+    settlement:
+      # 结算总开关：集成测试置 false，直调 service 验证
+      enabled: ${RULE_SETTLEMENT_ENABLED:true}
+      cron: ${RULE_SETTLEMENT_CRON:0 7 1 * * *}    # 每日 01:07
+    reconcile:
+      cron: ${RECONCILE_CRON:0 13 2 * * 0}         # 每周日 02:13
+  rule:
+    # 单个受益人的生效规则上限
+    max-per-member: ${RULE_MAX_PER_MEMBER:10}
+    expiry-cron: ${RULE_EXPIRY_CRON:0 23 1 * * *}  # 每日 01:23

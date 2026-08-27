@@ -1,5 +1,9 @@
 package wyq.pocket.money.user.service;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +20,7 @@ import wyq.pocket.money.user.dto.ChangePasswordRequest;
 import wyq.pocket.money.user.dto.UpdateNicknameRequest;
 import wyq.pocket.money.user.dto.UserErrorCode;
 import wyq.pocket.money.user.dto.UserMeResponse;
+import wyq.pocket.money.user.mapper.FamilyMemberMapper;
 import wyq.pocket.money.user.mapper.UserMapper;
 
 /**
@@ -35,6 +40,8 @@ public class UserService {
 
     private final AuditService auditService;
 
+    private final FamilyMemberMapper familyMemberMapper;
+
     /**
      * 注入协作对象。
      *
@@ -42,13 +49,16 @@ public class UserService {
      * @param passwordEncoder     BCrypt 编码器
      * @param refreshTokenService 令牌服务
      * @param auditService        审计服务
+     * @param familyMemberMapper  成员关系 Mapper（M2 统计摘要成员数）
      */
     public UserService(UserMapper userMapper, PasswordEncoder passwordEncoder,
-                       RefreshTokenService refreshTokenService, AuditService auditService) {
+                       RefreshTokenService refreshTokenService, AuditService auditService,
+                       FamilyMemberMapper familyMemberMapper) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
         this.auditService = auditService;
+        this.familyMemberMapper = familyMemberMapper;
     }
 
     /**
@@ -95,6 +105,33 @@ public class UserService {
         refreshTokenService.revokeAll(user.getId());
         auditService.record(new AuditEntry(user.getId(), AuditAction.PASSWORD_CHANGE,
                 "USER", String.valueOf(user.getId()), null));
+    }
+
+    /**
+     * 批量查询昵称映射（M2 榜单 / 报表昵称回显）。
+     *
+     * @param userIds 用户 ID 集合，空集合返回空 Map
+     * @return userId → nickname
+     */
+    public Map<Long, String> findNicknameMap(Collection<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> nicknameMap = new HashMap<>();
+        for (User user : userMapper.findNicknamesByIds(userIds)) {
+            nicknameMap.put(user.getId(), user.getNickname());
+        }
+        return nicknameMap;
+    }
+
+    /**
+     * 家庭成员数（M2 统计摘要）。
+     *
+     * @param familyId 家庭 ID
+     * @return 在册成员数
+     */
+    public int countFamilyMembers(long familyId) {
+        return familyMemberMapper.countByFamilyId(familyId);
     }
 
     private User requireUser(long userId) {

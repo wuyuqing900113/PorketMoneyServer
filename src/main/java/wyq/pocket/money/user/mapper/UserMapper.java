@@ -1,6 +1,8 @@
 package wyq.pocket.money.user.mapper;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -123,4 +125,17 @@ public interface UserMapper {
      */
     @Update("UPDATE app_user SET status = #{status}, updated_at = now() WHERE id = #{id}")
     int updateStatus(@Param("id") long id, @Param("status") String status);
+
+    /**
+     * 批量查询昵称（M2 榜单 / 报表昵称回显）。
+     *
+     * <p>仅回填 id / nickname 两列；调用方须保证 ids 非空（空集合 SQL 非法）。
+     *
+     * @param ids 用户 ID 集合
+     * @return 用户列表（仅 id、nickname 字段有值）
+     */
+    @Select("<script>SELECT id, nickname FROM app_user WHERE id IN "
+            + "<foreach collection='ids' item='item' open='(' separator=',' close=')'>"
+            + "#{item}</foreach></script>")
+    List<User> findNicknamesByIds(@Param("ids") Collection<Long> ids);
 }

@@ -16,6 +16,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -34,6 +35,7 @@ import wyq.pocket.money.user.dto.MemberSummary;
 import wyq.pocket.money.user.dto.ResetChildPasswordRequest;
 import wyq.pocket.money.user.dto.UpdateFamilyRequest;
 import wyq.pocket.money.user.dto.UpdateNicknameRequest;
+import wyq.pocket.money.user.event.MemberRemovedEvent;
 import wyq.pocket.money.user.mapper.FamilyMapper;
 import wyq.pocket.money.user.mapper.FamilyMemberMapper;
 import wyq.pocket.money.user.mapper.UserMapper;
@@ -64,8 +66,12 @@ class FamilyServiceTest {
 
     private final FamilyAccessChecker familyAccessChecker = mock(FamilyAccessChecker.class);
 
+    private final ApplicationEventPublisher eventPublisher =
+            mock(ApplicationEventPublisher.class);
+
     private final FamilyService service = new FamilyService(familyMapper, familyMemberMapper,
-            userMapper, passwordEncoder, refreshTokenService, auditService, familyAccessChecker);
+            userMapper, passwordEncoder, refreshTokenService, auditService, familyAccessChecker,
+            eventPublisher);
 
     private Family family() {
         Family family = new Family("小明的家庭", 1L);
@@ -350,5 +356,7 @@ class FamilyServiceTest {
         verify(userMapper).updateStatus(42L, User.STATUS_DISABLED);
         verify(auditService).record(
                 new AuditEntry(1L, AuditAction.MEMBER_REMOVE, "USER", "42", null));
+        // M2 §7.4：移除成员发布领域事件，触发资金 / 规则联动
+        verify(eventPublisher).publishEvent(new MemberRemovedEvent(10L, 42L));
     }
 }
