@@ -134,11 +134,28 @@
         </dependency>
 
         <!-- 韧性：限流（M3 设计 D20 落地 RateLimiter，按用户限流）。
-             resilience4j-ratelimiter 传递引入 resilience4j-core；
-             CB / TimeLimiter / Retry 骨架归 M4，暂不引对应模块 -->
+             resilience4j-ratelimiter 传递引入 resilience4j-core -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-ratelimiter</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <!-- 韧性：AI 调用稳定性（M4 设计 D36 真正落地）。
+             CircuitBreaker / TimeLimiter / Retry 三模块为 AI 意图解析链路
+             提供熔断、30s 超时、幂等查询重试；均随 resilience4j-core 传递 -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-timelimiter</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
             <version>${resilience4j.version}</version>
         </dependency>
 

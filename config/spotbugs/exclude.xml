@@ -145,4 +145,45 @@
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 
+    <!-- EI_EXPOSE_REP2：ai 模块 service / controller / job 构造注入的协作者
+         一律为容器级单例（MyBatis Mapper 代理、@Service/@Component、Clock、
+         Jackson 3 JsonMapper），注入后仅调用其方法、不修改其状态，
+         "存储外部可变对象"在该惯例下为误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.ai\.(service|controller|job)\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：common.ai 为 M4 抽象层，其中
+         IntentResult / ToolDefinition 值记录紧凑构造器已用 Map.copyOf 固化
+         参数映射（构造后不可变），其余 ChatPort 等为纯接口。访问器返回
+         不可变快照，SpotBugs 无法识别 record 内的防御性拷贝，两条均为误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.common\.ai\..*"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="~wyq\.pocket\.money\.common\.ai\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：EvalCase 评测样本值记录，紧凑构造器
+         已用 Map.copyOf 固化期望参数（构造后不可变）。同 DTO 记录惯例的误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.ai\.eval\..*"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="~wyq\.pocket\.money\.ai\.eval\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP：IntentCatalog.toolDefinitions() 返回的 definitions
+         字段已在构造期以 List.copyOf 固化为不可变清单，调用方无法改写。
+         SpotBugs 无法识别字段初始化处的防御性拷贝，属确定性误报。 -->
+    <Match>
+        <Class name="wyq.pocket.money.ai.service.IntentCatalog"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+
 </FindBugsFilter>

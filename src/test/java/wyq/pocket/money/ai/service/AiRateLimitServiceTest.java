@@ -1,4 +1,4 @@
-package wyq.pocket.money.common.resilience;
+package wyq.pocket.money.ai.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,15 +6,17 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import wyq.pocket.money.common.ai.AiProperties;
+
 /**
- * RateLimitService 单元测试：按用户维度的非阻塞令牌桶限流
- * （额度内放行、耗尽立即拒绝、用户间隔离，M3 设计 §7）。
+ * AI 调用限流单元测试（M4 设计 §8.2）：每用户非阻塞令牌桶，额度内放行、
+ * 耗尽立即拒绝、用户间隔离。
  */
-class RateLimitServiceTest {
+class AiRateLimitServiceTest {
 
     @Test
     void shouldAllowWithinLimitAndRejectWhenExhausted() {
-        RateLimitService service = new RateLimitService(
+        AiRateLimitService service = new AiRateLimitService(
                 properties(2, Duration.ofSeconds(60)));
 
         assertThat(service.tryAcquire(1L)).isTrue();
@@ -24,7 +26,7 @@ class RateLimitServiceTest {
 
     @Test
     void shouldIsolateUsers() {
-        RateLimitService service = new RateLimitService(
+        AiRateLimitService service = new AiRateLimitService(
                 properties(1, Duration.ofSeconds(60)));
 
         assertThat(service.tryAcquire(1L)).isTrue();
@@ -34,15 +36,15 @@ class RateLimitServiceTest {
 
     @Test
     void shouldExposeRefreshPeriod() {
-        RateLimitService service = new RateLimitService(
+        AiRateLimitService service = new AiRateLimitService(
                 properties(10, Duration.ofMinutes(1)));
 
         assertThat(service.refreshPeriod()).isEqualTo(Duration.ofMinutes(1));
     }
 
-    private static ResilienceProperties properties(int limit, Duration period) {
-        return new ResilienceProperties(
-                new ResilienceProperties.RateLimit(limit, period),
-                new ResilienceProperties.Ai(Duration.ofSeconds(30), 50, 10, 2));
+    private static AiProperties properties(int limit, Duration period) {
+        return new AiProperties(true, "TEXT", Duration.ofSeconds(60), Duration.ofDays(7),
+                true, "0 43 4 * * *", new AiProperties.RateLimit(limit, period),
+                new AiProperties.Stub(false));
     }
 }

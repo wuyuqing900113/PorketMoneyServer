@@ -28,13 +28,14 @@ class ArchitectureTest {
     private static final List<String> BUSINESS_MODULES =
             List.of("user", "money", "rule", "finance", "ai", "notify");
 
-    /** M2 设计 §3.4 允许的业务模块间依赖方向（common 层为公共叶子，不在此列）。 */
+    /** M2 设计 §3.4 允许的业务模块间依赖方向（common 层为公共叶子，不在此列）。
+     *  M4 设计 §3.4：ai 依赖 money/user/finance/rule 的 service/dto 层（工具复用既有门面）。 */
     private static final Map<String, List<String>> ALLOWED_MODULE_DEPS = Map.of(
             "finance", List.of("money", "user"),
             "money", List.of("user"),
             "rule", List.of("user", "money"),
             "user", List.of(),
-            "ai", List.of(),
+            "ai", List.of("money", "user", "finance", "rule"),
             "notify", List.of());
 
     private static JavaClasses importedClasses;
@@ -98,6 +99,21 @@ class ArchitectureTest {
                 .that().resideInAPackage("wyq.pocket.money.common..")
                 .should().dependOnClassesThat().resideInAnyPackage(modulePackages)
                 .because("公共层是依赖叶子，禁止反向依赖任何业务模块")
+                .allowEmptyShould(true)
+                .check(importedClasses);
+    }
+
+    @Test
+    void aiShouldNotAccessBusinessMappersOrDomains() {
+        noClasses()
+                .that().resideInAPackage("wyq.pocket.money.ai..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "wyq.pocket.money.money.mapper..", "wyq.pocket.money.money.domain..",
+                        "wyq.pocket.money.rule.mapper..", "wyq.pocket.money.rule.domain..",
+                        "wyq.pocket.money.user.mapper..", "wyq.pocket.money.user.domain..",
+                        "wyq.pocket.money.finance.mapper..", "wyq.pocket.money.finance.domain..")
+                .because("ai 不得触碰业务模块 mapper/domain，取数须经 service 层门面"
+                        + "（M4 设计 §3.4）")
                 .allowEmptyShould(true)
                 .check(importedClasses);
     }

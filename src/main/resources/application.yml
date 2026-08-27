@@ -98,3 +98,24 @@ pocket-money:
     rate-limit:
       limit-for-period: ${RATE_LIMIT_FOR_PERIOD:10}
       limit-refresh-period: ${RATE_LIMIT_REFRESH_PERIOD:PT1M}
+    # AI 调用稳定性（M4 设计 §8.1）
+    ai:
+      timeout: ${AI_TIMEOUT:30s}
+      circuit-breaker-failure-rate: ${AI_CB_FAILURE_RATE:50}
+      circuit-breaker-sliding-window: ${AI_CB_SLIDING_WINDOW:10}
+      retry-max-attempts: ${AI_RETRY_MAX_ATTEMPTS:2}
+  # ============================================================
+  # M4 AI 交互配置（M4-detailed-design.md §12）
+  # ============================================================
+  ai:
+    mock: ${AI_MOCK:true}
+    channel-default: ${AI_CHANNEL_DEFAULT:TEXT}
+    pending-ttl: ${AI_PENDING_TTL:PT60S}
+    session-ttl: ${AI_SESSION_TTL:P7D}
+    cleanup-enabled: ${AI_CLEANUP_ENABLED:true}
+    cleanup-cron: ${AI_CLEANUP_CRON:0 43 4 * * *}  # 每日 04:43
+    rate-limit:
+      limit-for-period: ${AI_RATE_LIMIT_FOR_PERIOD:10}
+      limit-refresh-period: ${AI_RATE_LIMIT_REFRESH_PERIOD:PT1M}
+    stub:
+      fail: ${AI_STUB_FAIL:false}

@@ -98,5 +98,31 @@ public enum AuditAction {
     WORK_VALUE_RECORD,
 
     /** 对账发现余额/流水不一致（伴随 SECURITY ERROR 告警）。 */
-    RECONCILE_MISMATCH
+    RECONCILE_MISMATCH,
+
+    // ---- M4 AI 交互动作（M4-detailed-design.md §10） ----
+
+    /** AI 会话创建。 */
+    AI_SESSION_START,
+
+    /** AI 意图解析与执行成功。 */
+    AI_INTENT,
+
+    /** AI 资金写生成二次确认动作。 */
+    AI_ACTION_CONFIRM_REQUEST,
+
+    /** AI 二次确认动作执行成功（记账完成）。 */
+    AI_ACTION_EXECUTED,
+
+    /** AI 二次确认动作执行业务失败（落 REJECTED）。 */
+    AI_ACTION_REJECTED,
+
+    /** AI 二次确认动作被用户取消。 */
+    AI_ACTION_CANCELED,
+
+    /** AI 二次确认动作超时过期。 */
+    AI_ACTION_EXPIRED,
+
+    /** AI 服务不可用降级（熔断 / 超时 / 运行期失败）。 */
+    AI_DEGRADED
 }
