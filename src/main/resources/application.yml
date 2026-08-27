@@ -85,3 +85,16 @@ pocket-money:
     # 单个受益人的生效规则上限
     max-per-member: ${RULE_MAX_PER_MEMBER:10}
     expiry-cron: ${RULE_EXPIRY_CRON:0 23 1 * * *}  # 每日 01:23
+  # ============================================================
+  # M3 可靠性配置（M3-detailed-design.md §11）
+  # ============================================================
+  idempotency:
+    key-max-length: ${IDEMPOTENCY_KEY_MAX_LENGTH:64}
+    ttl: ${IDEMPOTENCY_TTL:P7D}
+    takeover-grace: ${IDEMPOTENCY_TAKEOVER_GRACE:PT60S}
+    cleanup-enabled: ${IDEMPOTENCY_CLEANUP_ENABLED:true}
+    cleanup-cron: ${IDEMPOTENCY_CLEANUP_CRON:0 37 3 * * *}  # 每日 03:37
+  resilience:
+    rate-limit:
+      limit-for-period: ${RATE_LIMIT_FOR_PERIOD:10}
+      limit-refresh-period: ${RATE_LIMIT_REFRESH_PERIOD:PT1M}

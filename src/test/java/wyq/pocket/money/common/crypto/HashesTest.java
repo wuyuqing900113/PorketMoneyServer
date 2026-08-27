@@ -37,6 +37,6 @@ class HashesTest {
 
     @Test
     void nullInputShouldFailFast() {
-        assertThatNullPointerException().isThrownBy(() -> Hashes.sha256Hex(null));
+        assertThatNullPointerException().isThrownBy(() -> Hashes.sha256Hex((String) null));
     }
 }

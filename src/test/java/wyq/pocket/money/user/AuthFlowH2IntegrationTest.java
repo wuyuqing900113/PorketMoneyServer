@@ -15,6 +15,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import wyq.pocket.money.support.IdempotencyKeys;
 
 /**
  * 认证全链路 H2 托底集成测试（M1 设计 §12.2 Docker 未就绪期间的主验证）：
@@ -42,6 +43,8 @@ class AuthFlowH2IntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        // M3 起写操作强制要求幂等键，为所有 POST/PUT/DELETE 自动注入唯一键
+        RestAssured.replaceFiltersWith(IdempotencyKeys.uniqueKeyPerRequest());
     }
 
     private record TestAccount(long userId, long familyId, String accessToken,

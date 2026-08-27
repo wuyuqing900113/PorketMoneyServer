@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import wyq.pocket.money.common.audit.AuditAction;
 import wyq.pocket.money.common.audit.AuditEntry;
 import wyq.pocket.money.common.audit.AuditService;
+import wyq.pocket.money.common.idempotency.IdempotencyContext;
 import wyq.pocket.money.common.security.UserIdPrincipal;
 import wyq.pocket.money.money.domain.MoneyTransaction;
 import wyq.pocket.money.money.domain.TxBizType;
@@ -95,7 +96,8 @@ public class MoneyOperationService {
         familyAccessChecker.requireMember(familyId, targetUserId);
         requireSelfIfChild(principal, targetUserId);
         return accountTransactionService.apply(new TxCommand(familyId, targetUserId, direction,
-                bizType, amount, null, null, principal.userId(), remark, null));
+                bizType, amount, null, null, principal.userId(), remark,
+                IdempotencyContext.currentKey()));
     }
 
     private void requireSelfIfChild(UserIdPrincipal principal, long targetUserId) {

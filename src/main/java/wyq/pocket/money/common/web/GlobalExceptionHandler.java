@@ -1,5 +1,6 @@
 package wyq.pocket.money.common.web;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -102,6 +103,21 @@ public class GlobalExceptionHandler {
     public Result<Void> handleBusiness(BusinessException ex) {
         LOG.warn("业务异常: code={}, message={}", ex.getErrorCode().getCode(), ex.getMessage());
         return Result.failure(ex.getErrorCode(), ex.getMessage());
+    }
+
+    /**
+     * 限流拒绝（M3 设计 §7）：Resilience4j decorate 调用抛出的限流异常。
+     *
+     * <p>过滤器路径已直接返回 100007 + Retry-After；此处兜底 MVC 内
+     * decorate 调用场景（M4 接入），输出同一 code。
+     *
+     * @param ex 限流异常
+     * @return 100007 响应
+     */
+    @ExceptionHandler(RequestNotPermitted.class)
+    public Result<Void> handleRateLimited(RequestNotPermitted ex) {
+        LOG.warn("限流拒绝: {}", ex.getMessage());
+        return Result.failure(CommonErrorCode.RATE_LIMITED);
     }
 
     /**

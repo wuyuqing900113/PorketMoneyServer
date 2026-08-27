@@ -38,7 +38,7 @@ public interface MoneyAccountMapper {
      * @return 影响行数（0 = 已存在）
      */
     @Insert("INSERT INTO money_account (family_id, user_id) "
-            + "VALUES (#{familyId}, #{userId}) ON CONFLICT (user_id) DO NOTHING")
+            + "VALUES (#{familyId}, #{userId}) ON CONFLICT DO NOTHING")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertIgnoreConflict(MoneyAccount account);
 

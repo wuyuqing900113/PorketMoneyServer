@@ -17,6 +17,7 @@ import wyq.pocket.money.common.audit.AuditAction;
 import wyq.pocket.money.common.audit.AuditEntry;
 import wyq.pocket.money.common.audit.AuditService;
 import wyq.pocket.money.common.exception.BusinessException;
+import wyq.pocket.money.common.idempotency.IdempotencyContext;
 import wyq.pocket.money.common.security.UserIdPrincipal;
 import wyq.pocket.money.money.domain.LearningTask;
 import wyq.pocket.money.money.domain.LearningTaskStatus;
@@ -149,7 +150,8 @@ public class LearningTaskService {
         MoneyTransaction tx = accountTransactionService.apply(new TxCommand(
                 task.getFamilyId(), task.getAssigneeUserId(), TxDirection.IN,
                 TxBizType.LEARNING_REWARD, task.getRewardAmount(),
-                TxRefType.LEARNING_TASK, task.getId(), principal.userId(), task.getTitle(), null));
+                TxRefType.LEARNING_TASK, task.getId(), principal.userId(), task.getTitle(),
+                IdempotencyContext.currentKey()));
         taskMapper.updateApprove(taskId, principal.userId(), Instant.now(clock), tx.getId());
         auditService.record(new AuditEntry(principal.userId(), AuditAction.LEARNING_TASK_APPROVE,
                 "LEARNING_TASK", String.valueOf(taskId), null));

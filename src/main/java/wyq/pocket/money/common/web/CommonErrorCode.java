@@ -33,6 +33,12 @@ public enum CommonErrorCode implements ErrorCode {
     /** 请求过于频繁（限流）：延迟后重试。 */
     RATE_LIMITED(100007, "请求过于频繁"),
 
+    /** 缺少幂等键（写操作必填 Idempotency-Key 请求头），不可重试。 */
+    IDEMPOTENCY_KEY_REQUIRED(100008, "缺少幂等键"),
+
+    /** 幂等键冲突（同键不同请求体），不可重试。 */
+    IDEMPOTENCY_CONFLICT(100009, "幂等键冲突"),
+
     /** 系统内部错误：可重试（携带幂等键）。 */
     INTERNAL_ERROR(900001, "系统内部错误"),
 

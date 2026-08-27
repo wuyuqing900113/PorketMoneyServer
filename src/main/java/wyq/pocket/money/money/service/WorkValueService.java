@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import wyq.pocket.money.common.audit.AuditAction;
 import wyq.pocket.money.common.audit.AuditEntry;
 import wyq.pocket.money.common.audit.AuditService;
+import wyq.pocket.money.common.idempotency.IdempotencyContext;
 import wyq.pocket.money.common.security.UserIdPrincipal;
 import wyq.pocket.money.money.domain.MoneyTransaction;
 import wyq.pocket.money.money.domain.TxBizType;
@@ -88,7 +89,7 @@ public class WorkValueService {
                 principal.userId(), TxDirection.IN, TxBizType.WORK_VALUE,
                 request.allowanceAmount(),
                 TxRefType.WORK_VALUE_RECORD, null, principal.userId(),
-                request.workSummary(), null));
+                request.workSummary(), IdempotencyContext.currentKey()));
         WorkValueRecord record = new WorkValueRecord();
         record.setFamilyId(familyId);
         record.setParentUserId(principal.userId());

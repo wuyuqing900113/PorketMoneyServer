@@ -128,4 +128,21 @@
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 
+    <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：common.idempotency / common.resilience
+         为 M3 新增的拦截器、幂等服务、清理任务与请求体缓存包装器。其构造注入
+         的协作者一律为容器级单例（MyBatis Mapper 代理、@Component 的
+         IdempotencyService / RateLimitService、Jackson 3 JsonMapper、Clock），
+         注入后仅调用方法、不修改状态；IdempotencyOutcome 访问器返回的
+         IdempotencyRecord 为两阶段幂等的中间结果，调用方（拦截器）只读使用；
+         CachedBodyRequestWrapper.getBody() 返回缓存的请求体字节，仅用于拦截器
+         内单次读取回放。均属同一惯例下的确定性误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.common\.(idempotency|resilience)\..*"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="~wyq\.pocket\.money\.common\.(idempotency|resilience)\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
 </FindBugsFilter>

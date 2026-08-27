@@ -27,6 +27,9 @@
         <springdoc.version>3.0.0</springdoc.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <archunit.version>1.5.0</archunit.version>
+        <!-- 韧性框架（M3 设计 D20）：程序化装配限流，规避 Boot 4 starter 兼容风险；
+             版本锁定后写入 docs/version-matrix.md -->
+        <resilience4j.version>2.3.0</resilience4j.version>
 
         <!-- ==== 质量工具链版本 ==== -->
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
@@ -128,6 +131,15 @@
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
             <version>${logstash-logback-encoder.version}</version>
+        </dependency>
+
+        <!-- 韧性：限流（M3 设计 D20 落地 RateLimiter，按用户限流）。
+             resilience4j-ratelimiter 传递引入 resilience4j-core；
+             CB / TimeLimiter / Retry 骨架归 M4，暂不引对应模块 -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-ratelimiter</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
 
         <!-- ==== 测试 ==== -->
