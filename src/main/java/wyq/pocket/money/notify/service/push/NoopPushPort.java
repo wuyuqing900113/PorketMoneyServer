@@ -9,7 +9,8 @@ package wyq.pocket.money.notify.service.push;
 public class NoopPushPort implements PushPort {
 
     @Override
-    public boolean send(long notificationId, long userId, String title, String content) {
+    public boolean send(long notificationId, long userId, String deviceToken,
+                        String title, String content) {
         return false;
     }
 }

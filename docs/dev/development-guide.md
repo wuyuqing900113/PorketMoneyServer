@@ -82,7 +82,7 @@ mvn -Dtest=XxxTest test   # 单跑
 
 ## 6. 数据库迁移（Flyway）
 
-- 脚本：`src/main/resources/db/migration/V{序号}__{描述}.sql`（当前 V1–V9）。
+- 脚本：`src/main/resources/db/migration/V{序号}__{描述}.sql`（当前 V1–V10）。
 - 已发布脚本**永不修改**；变更用新脚本前向修复（`Vn__xxx.sql`），回滚也走新脚本。
 - 应用启动自动迁移；本地 H2 与生产 PostgreSQL 均经 Flyway。
 

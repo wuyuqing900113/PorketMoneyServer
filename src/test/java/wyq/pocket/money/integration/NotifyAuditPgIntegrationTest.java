@@ -57,6 +57,7 @@ class NotifyAuditPgIntegrationTest extends AbstractPostgresIntegrationTest {
                 String.format("1399%07d", COUNTER.incrementAndGet()));
         long childId = createChild(parent,
                 String.format("pgau%08d", COUNTER.incrementAndGet()));
+        seedToken(childId);
 
         // 投递成功路径：通知生成 + 投递成功各落一条 NOTIFY_DELIVERED
         pushPort.setSucceed(true);
@@ -105,6 +106,12 @@ class NotifyAuditPgIntegrationTest extends AbstractPostgresIntegrationTest {
         jdbcTemplate.update(
                 "UPDATE notification_delivery SET next_retry_at = now() - interval '1 minute' "
                         + "WHERE id = ?", deliveryId);
+    }
+
+    private void seedToken(long userId) {
+        jdbcTemplate.update("INSERT INTO user_push_token (user_id, provider, token) "
+                        + "VALUES (?, 'HARMONY', 'test-device-token') ON CONFLICT DO NOTHING",
+                userId);
     }
 
     private int countAudit(long userId, String action, String targetType) {

@@ -32,7 +32,7 @@ class MoneyTransactionNotifyListenerTest {
 
     private static NotifyProperties properties(BigDecimal threshold) {
         return new NotifyProperties(true, threshold,
-                new NotifyProperties.Push(false),
+                new NotifyProperties.Push(false, null),
                 new NotifyProperties.Relay(true, "0 17 2 * * *", 3, Duration.ofMinutes(1)),
                 new NotifyProperties.Cleanup(true, "0 47 4 * * *", Duration.ofDays(30)));
     }

@@ -34,17 +34,21 @@ public interface NotificationDeliveryMapper {
     int insert(NotificationDelivery delivery);
 
     /**
-     * 扫描待投递记录（PENDING 且到点，联通知取接收人与文案）。
+     * 扫描待投递记录（PENDING 且到点，联通知取接收人与文案，LEFT JOIN 取鸿蒙设备令牌）。
      *
-     * <p>record 无默认构造器，显式 @ConstructorArgs 按列映射。
+     * <p>record 无默认构造器，显式 @ConstructorArgs 按列映射。未注册令牌的用户
+     * device_token 为 null，由 relay 按 NO_PUSH_TOKEN 退避重试（注册后下一轮命中）。
      *
      * @param now   当前时间
      * @param limit 单批上限
      * @return 待投递记录
      */
     @Select("SELECT d.id AS delivery_id, d.notification_id, d.retry_count, "
-            + "n.user_id, n.title, n.content "
-            + "FROM notification_delivery d JOIN notification n ON n.id = d.notification_id "
+            + "n.user_id, t.token AS device_token, n.title, n.content "
+            + "FROM notification_delivery d "
+            + "JOIN notification n ON n.id = d.notification_id "
+            + "LEFT JOIN user_push_token t ON t.user_id = n.user_id "
+            + "AND t.provider = 'HARMONY' AND t.enabled = TRUE "
             + "WHERE d.status = 'PENDING' AND d.next_retry_at <= #{now} "
             + "ORDER BY d.next_retry_at LIMIT #{limit}")
     @ConstructorArgs({
@@ -52,6 +56,7 @@ public interface NotificationDeliveryMapper {
         @Arg(column = "notification_id", javaType = long.class),
         @Arg(column = "retry_count", javaType = int.class),
         @Arg(column = "user_id", javaType = long.class),
+        @Arg(column = "device_token", javaType = String.class),
         @Arg(column = "title", javaType = String.class),
         @Arg(column = "content", javaType = String.class)
     })

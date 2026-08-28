@@ -66,12 +66,19 @@ class NotifyRelayPgIntegrationTest extends AbstractPostgresIntegrationTest {
                         + "WHERE id = ?", deliveryId);
     }
 
+    private void seedToken(long userId) {
+        jdbcTemplate.update("INSERT INTO user_push_token (user_id, provider, token) "
+                        + "VALUES (?, 'HARMONY', 'test-device-token') ON CONFLICT DO NOTHING",
+                userId);
+    }
+
     @Test
     void relayShouldTransitPendingToSentThenDead() {
         TestAccount parent = registerAndLogin(
                 String.format("1398%07d", COUNTER.incrementAndGet()));
         long childId = createChild(parent,
                 String.format("pgrl%08d", COUNTER.incrementAndGet()));
+        seedToken(childId);
 
         // 成功路径：PushPort 返回 true → PENDING → SENT
         pushPort.setSucceed(true);

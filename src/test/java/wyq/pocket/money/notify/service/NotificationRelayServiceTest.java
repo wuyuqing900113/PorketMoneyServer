@@ -29,9 +29,10 @@ import wyq.pocket.money.notify.mapper.NotificationDeliveryMapper;
 import wyq.pocket.money.notify.service.push.PushPort;
 
 /**
- * 投递重试引擎单元测试（M5 设计 §7.2）：PENDING → SENT / 退避重试 / 耗尽置 DEAD；
+ * 投递重试引擎单元测试（M5 设计 §7.2 / GA D68）：PENDING → SENT / 退避重试 / 耗尽置 DEAD；
  * 成功审计 NOTIFY_DELIVERED，耗尽审计 NOTIFY_DELIVERY_FAILED，异常视同失败，
- * 单条失败不阻断其余（无 @Transactional，逐条自提交）。
+ * 单条失败不阻断其余（无 @Transactional，逐条自提交）；用户未注册设备令牌时
+ * 以 NO_PUSH_TOKEN 退避重试且不调用 PushPort。
  */
 class NotificationRelayServiceTest {
 
@@ -49,7 +50,7 @@ class NotificationRelayServiceTest {
 
     private static NotifyProperties properties(int maxRetry) {
         return new NotifyProperties(true, new BigDecimal("5.00"),
-                new NotifyProperties.Push(true),
+                new NotifyProperties.Push(true, null),
                 new NotifyProperties.Relay(true, "0 17 2 * * *", maxRetry,
                         Duration.ofMinutes(1)),
                 new NotifyProperties.Cleanup(true, "0 47 4 * * *", Duration.ofDays(30)));
@@ -61,14 +62,16 @@ class NotificationRelayServiceTest {
     }
 
     private PendingDelivery delivery(int retryCount) {
-        return new PendingDelivery(10L, 100L, retryCount, 42L, "零花钱入账", "你收到 50.00 元零花钱");
+        return new PendingDelivery(10L, 100L, retryCount, 42L, "harmony-device-token",
+                "零花钱入账", "你收到 50.00 元零花钱");
     }
 
     @Test
     void successShouldMarkSentAndAuditDelivered() {
         when(deliveryMapper.findPendingDeliveries(NOW, 100))
                 .thenReturn(List.of(delivery(0)));
-        when(pushPort.send(100L, 42L, "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(true);
+        when(pushPort.send(100L, 42L, "harmony-device-token",
+                "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(true);
 
         int processed = service(3).drainPending();
 
@@ -86,7 +89,8 @@ class NotificationRelayServiceTest {
     void failureBelowMaxRetryShouldScheduleBackoffRetry() {
         when(deliveryMapper.findPendingDeliveries(NOW, 100))
                 .thenReturn(List.of(delivery(0)));
-        when(pushPort.send(100L, 42L, "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
+        when(pushPort.send(100L, 42L, "harmony-device-token",
+                "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
 
         int processed = service(3).drainPending();
 
@@ -103,7 +107,8 @@ class NotificationRelayServiceTest {
     void failureAtRetryLimitShouldMarkDeadAndAuditFailure() {
         when(deliveryMapper.findPendingDeliveries(NOW, 100))
                 .thenReturn(List.of(delivery(2)));
-        when(pushPort.send(100L, 42L, "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
+        when(pushPort.send(100L, 42L, "harmony-device-token",
+                "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
 
         int processed = service(3).drainPending();
 
@@ -121,7 +126,7 @@ class NotificationRelayServiceTest {
         String longMessage = "e".repeat(300);
         when(deliveryMapper.findPendingDeliveries(NOW, 100))
                 .thenReturn(List.of(delivery(0)));
-        when(pushPort.send(anyLong(), anyLong(), any(), any()))
+        when(pushPort.send(anyLong(), anyLong(), any(), any(), any()))
                 .thenThrow(new RuntimeException(longMessage));
 
         int processed = service(3).drainPending();
@@ -135,9 +140,12 @@ class NotificationRelayServiceTest {
     void singleFailureShouldNotBlockOthers() {
         when(deliveryMapper.findPendingDeliveries(NOW, 100))
                 .thenReturn(List.of(delivery(0),
-                        new PendingDelivery(11L, 101L, 0, 43L, "规则到期", "规则「每周零花钱」到期")));
-        when(pushPort.send(100L, 42L, "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
-        when(pushPort.send(101L, 43L, "规则到期", "规则「每周零花钱」到期")).thenReturn(true);
+                        new PendingDelivery(11L, 101L, 0, 43L, "harmony-device-token-2",
+                                "规则到期", "规则「每周零花钱」到期")));
+        when(pushPort.send(100L, 42L, "harmony-device-token",
+                "零花钱入账", "你收到 50.00 元零花钱")).thenReturn(false);
+        when(pushPort.send(101L, 43L, "harmony-device-token-2",
+                "规则到期", "规则「每周零花钱」到期")).thenReturn(true);
 
         int processed = service(3).drainPending();
 
@@ -145,5 +153,19 @@ class NotificationRelayServiceTest {
         verify(deliveryMapper).scheduleRetry(eq(10L), eq(1), any(Instant.class),
                 eq("PUSH_SEND_REJECTED"));
         verify(deliveryMapper).markSent(11L);
+    }
+
+    @Test
+    void missingDeviceTokenShouldBackoffWithoutCallingPushPort() {
+        when(deliveryMapper.findPendingDeliveries(NOW, 100))
+                .thenReturn(List.of(new PendingDelivery(12L, 102L, 0, 44L, null,
+                        "余额不足", "余额低于 5.00 元")));
+
+        int processed = service(3).drainPending();
+
+        assertThat(processed).isEqualTo(1);
+        verify(pushPort, never()).send(anyLong(), anyLong(), any(), any(), any());
+        verify(deliveryMapper).scheduleRetry(eq(12L), eq(1), any(Instant.class),
+                eq("NO_PUSH_TOKEN"));
     }
 }

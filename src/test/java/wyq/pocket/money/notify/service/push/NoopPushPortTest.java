@@ -11,6 +11,6 @@ class NoopPushPortTest {
 
     @Test
     void sendShouldAlwaysReturnFalse() {
-        assertThat(new NoopPushPort().send(1L, 42L, "标题", "正文")).isFalse();
+        assertThat(new NoopPushPort().send(1L, 42L, "device-token", "标题", "正文")).isFalse();
     }
 }

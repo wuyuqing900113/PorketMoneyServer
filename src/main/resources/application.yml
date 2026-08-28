@@ -32,6 +32,22 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  # ============================================================
+  # Spring AI / DeepSeek（GA D67）：DeepSeek 为 OpenAI 兼容协议，
+  # base-url 指向 DeepSeek 即可复用 OpenAI starter。
+  # 默认 chat 自动装配关闭（none），AI_MOCK=false 时置 openai 启用；
+  # API Key 无默认值，启用但缺失时启动失败（fail-fast，禁止硬编码）。
+  # ============================================================
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+    openai:
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-v4-pro}
+          temperature: 0.0
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -128,8 +144,18 @@ pocket-money:
     # 余额不足提醒阈值（家庭级统一，0=关闭；出账后 balance_after 低于该值触发）
     low-balance-threshold: ${NOTIFY_LOW_BALANCE_THRESHOLD:0}
     push:
-      # 外部推送通道（鸿蒙 Push）开关：通道拍板并实现 PushPort 后置 true
+      # 外部推送通道开关：true 时通知创建落 PENDING delivery 行，由 relay 投递
+      # （GA D68：通道拍板为鸿蒙 Push Kit，适配器 HarmonyPushPort）
       enabled: ${NOTIFY_PUSH_ENABLED:false}
+      harmony:
+        # 鸿蒙 Push Kit 服务端凭据（AppGallery Connect），全部经环境变量注入
+        app-id: ${HARMONY_PUSH_APP_ID:}
+        client-id: ${HARMONY_PUSH_CLIENT_ID:}
+        client-secret: ${HARMONY_PUSH_CLIENT_SECRET:}
+        # OAuth2 获取 access_token（默认华为官方端点，专有云可覆盖）
+        token-url: ${HARMONY_PUSH_TOKEN_URL:https://oauth-login.cloud.huawei.com/oauth2/v3/token}
+        # 消息下发端点（默认华为官方端点）
+        push-base-url: ${HARMONY_PUSH_BASE_URL:https://push-api.cloud.huawei.com}
     relay:
       enabled: ${NOTIFY_RELAY_ENABLED:true}
       cron: ${NOTIFY_RELAY_CRON:0 17 2 * * *}       # 每日 02:17

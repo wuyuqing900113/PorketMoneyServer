@@ -4,6 +4,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,12 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import wyq.pocket.money.common.security.UserIdPrincipal;
 import wyq.pocket.money.common.web.OpenApiConfig;
 import wyq.pocket.money.common.web.Result;
 import wyq.pocket.money.notify.dto.NotificationPageResponse;
+import wyq.pocket.money.notify.dto.PushTokenRegisterRequest;
 import wyq.pocket.money.notify.dto.UnreadCountResponse;
 import wyq.pocket.money.notify.service.NotificationService;
+import wyq.pocket.money.notify.service.PushTokenService;
 
 /**
  * 通知端点（M5 设计 §5.4 #1–#4）。
@@ -32,13 +36,18 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
+    private final PushTokenService pushTokenService;
+
     /**
-     * 注入通知服务。
+     * 注入协作服务。
      *
      * @param notificationService 通知服务
+     * @param pushTokenService    推送令牌注册服务
      */
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService,
+                                  PushTokenService pushTokenService) {
         this.notificationService = notificationService;
+        this.pushTokenService = pushTokenService;
     }
 
     /**
@@ -103,6 +112,24 @@ public class NotificationController {
     @PostMapping("/read-all")
     public Result<Void> markAllRead(@AuthenticationPrincipal UserIdPrincipal principal) {
         notificationService.markAllRead(principal.userId());
+        return Result.success();
+    }
+
+    /**
+     * 注册鸿蒙推送设备令牌（GA D68）。
+     *
+     * @param principal 当前登录主体
+     * @param request   令牌注册请求
+     * @return 空结果
+     */
+    @Operation(summary = "注册推送令牌",
+            description = "鸿蒙客户端登录后上报 HMS Push Kit 设备令牌，一人一渠道覆盖更新；"
+                    + "relay 投递外部推送时按用户取启用令牌。错误码：HTTP 401 + 100003 未认证；"
+                    + "100001 参数校验失败。")
+    @PostMapping("/push-token")
+    public Result<Void> registerPushToken(@AuthenticationPrincipal UserIdPrincipal principal,
+            @Valid @RequestBody PushTokenRegisterRequest request) {
+        pushTokenService.registerHarmonyToken(principal.userId(), request.deviceToken());
         return Result.success();
     }
 }

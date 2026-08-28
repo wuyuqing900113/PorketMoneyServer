@@ -48,8 +48,17 @@ docker push <ACR_NAMESPACE>/pocket-money-server:<TAG>
 | `DB_USERNAME` / `DB_PASSWORD` | ✅ | RDS 应用账号（最小权限） |
 | `JWT_SECRET` | ✅ | HS256 密钥 Base64，≥32 字节随机；三环境互不相同 |
 | `DATA_ENCRYPTION_KEY` | ✅ | AES-256 密钥 Base64，32 字节随机；轮换见安全操作手册 |
-| `AI_MOCK` | 可选 | 生产 provider 未接入前 `true`（StubChatPort 进程内桩） |
-| `NOTIFY_PUSH_ENABLED` | 可选 | 外部推送通道拍板前 `false` |
+| `AI_MOCK` | 可选 | 生产 `false`（真实大模型 DeepSeek，D67）；`true` 为进程内桩 `StubChatPort`（测试/演示） |
+| `SPRING_AI_MODEL_CHAT` | 可选 | 生产 `openai`（启用 Spring AI ChatModel 自动装配，指向 DeepSeek）；`none` 关闭 |
+| `DEEPSEEK_API_KEY` | 启用时必填 | DeepSeek API Key（云效凭据库托管）；`AI_MOCK=false` 时缺失即启动失败（fail-fast） |
+| `DEEPSEEK_BASE_URL` | 可选 | 默认 `https://api.deepseek.com`（OpenAI 兼容协议 base-url） |
+| `DEEPSEEK_MODEL` | 可选 | 默认 `deepseek-v4-pro` |
+| `NOTIFY_PUSH_ENABLED` | 可选 | 生产 `true`（鸿蒙 Push Kit，D68）；`false` 为 `NoopPushPort` 桩 |
+| `HARMONY_PUSH_APP_ID` | 启用时必填 | 鸿蒙 Push Kit 应用 ID（AppGallery Connect） |
+| `HARMONY_PUSH_CLIENT_ID` | 启用时必填 | 鸿蒙 Push Kit OAuth client_id（云效凭据库托管） |
+| `HARMONY_PUSH_CLIENT_SECRET` | 启用时必填 | 鸿蒙 Push Kit OAuth client_secret（云效凭据库托管） |
+| `HARMONY_PUSH_TOKEN_URL` | 可选 | 默认华为官方 OAuth2 端点（专有云可覆盖） |
+| `HARMONY_PUSH_BASE_URL` | 可选 | 默认 `https://push-api.cloud.huawei.com` |
 | `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` | 可选 | 默认 PT15M / P14D |
 | `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_DURATION` | 可选 | 默认 5 次 / PT15M |
 | `RATE_LIMIT_FOR_PERIOD` / `RATE_LIMIT_REFRESH_PERIOD` | 可选 | 写接口限流，默认 10/PT1M |
@@ -79,7 +88,7 @@ ECS 单机编排参考 `config/docker/docker-compose.prod.yml`（含资源限制
 
 ## 7. 首次上线检查清单
 
-- [ ] RDS 首启 Flyway V1–V9 迁移成功（启动日志无迁移错误）
+- [ ] RDS 首启 Flyway V1–V10 迁移成功（启动日志无迁移错误）
 - [ ] `/actuator/health` 双实例 UP，SLB 健康检查全绿
 - [ ] 生产 Swagger UI 关闭（`/swagger-ui` 不可达），`api-docs` 仅内网可达
 - [ ] 密钥全部来自凭据库，`secret-scan` 无命中

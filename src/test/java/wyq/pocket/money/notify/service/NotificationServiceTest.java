@@ -51,7 +51,7 @@ class NotificationServiceTest {
 
     private static NotifyProperties properties(boolean enabled, boolean pushEnabled) {
         return new NotifyProperties(enabled, new BigDecimal("5.00"),
-                new NotifyProperties.Push(pushEnabled),
+                new NotifyProperties.Push(pushEnabled, null),
                 new NotifyProperties.Relay(true, "0 17 2 * * *", 3, Duration.ofMinutes(1)),
                 new NotifyProperties.Cleanup(true, "0 47 4 * * *", Duration.ofDays(30)));
     }

@@ -63,6 +63,7 @@
 | archunit-junit5 | `archunit.version` | **1.5.0**（原 1.4.0） | ✅ | ArchitectureTest；1.4.0 的 ASM 不识别 class file 69，升级后通过 |
 | h2（test） | Boot BOM 管理 | **2.4.240** | ✅ | PostgreSQL 兼容模式内存库；T1 探针类型矩阵（BIGSERIAL / TIMESTAMP WITH TIME ZONE / JSONB ✅，`TIMESTAMPTZ` 缩写 ❌），T4 实测全量迁移链路 |
 | wiremock-standalone（test） | `wiremock.version` | **3.9.1** | ✅ | M6 引入（D49）：外部 AI/语音 HTTP 依赖故障注入模拟；shaded 工件内联 Jackson 2/Jetty，不与 Boot 4 Jackson 3 冲突；`AiHttpDegradationWireMockTest` 实测通过（超时/5xx/畸形→600001 + 熔断 OPEN→HALF_OPEN→CLOSED） |
+| spring-ai-bom / spring-ai-starter-model-openai | `spring-ai.version` | **2.0.0** | ✅ | M4 D27 / GA D67：DeepSeek 经 OpenAI 兼容协议接入（`spring.ai.openai.base-url=https://api.deepseek.com`）；自动装配默认关闭（`spring.ai.model.chat=none`），`AI_MOCK=false` 时由 `SpringAiChatPort` 装配；`SpringAiChatPortTest` 实测解析边界（成功/未知工具/夹带文本/畸形/异常传播） |
 
 ## 3. 质量工具链
 

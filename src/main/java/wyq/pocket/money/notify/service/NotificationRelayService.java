@@ -79,22 +79,14 @@ public class NotificationRelayService {
     }
 
     private void deliver(PendingDelivery delivery) {
-        String error;
-        try {
-            if (pushPort.send(delivery.notificationId(), delivery.userId(),
-                    delivery.title(), delivery.content())) {
-                deliveryMapper.markSent(delivery.deliveryId());
-                auditService.record(new AuditEntry(delivery.userId(), AuditAction.NOTIFY_DELIVERED,
-                        "NOTIFICATION_DELIVERY", String.valueOf(delivery.deliveryId()), null));
-                LOG.info("NOTIFY_SENT deliveryId={} notificationId={}",
-                        delivery.deliveryId(), delivery.notificationId());
-                return;
-            }
-            error = "PUSH_SEND_REJECTED";
-        } catch (RuntimeException e) {
-            error = truncate(e.getMessage());
-            LOG.error("NOTIFY_PUSH_ERROR deliveryId={} notificationId={}",
-                    delivery.deliveryId(), delivery.notificationId(), e);
+        String error = trySend(delivery);
+        if (error == null) {
+            deliveryMapper.markSent(delivery.deliveryId());
+            auditService.record(new AuditEntry(delivery.userId(), AuditAction.NOTIFY_DELIVERED,
+                    "NOTIFICATION_DELIVERY", String.valueOf(delivery.deliveryId()), null));
+            LOG.info("NOTIFY_SENT deliveryId={} notificationId={}",
+                    delivery.deliveryId(), delivery.notificationId());
+            return;
         }
         int retryCount = delivery.retryCount() + 1;
         if (retryCount < properties.relay().maxRetry()) {
@@ -108,6 +100,31 @@ public class NotificationRelayService {
                     "NOTIFICATION_DELIVERY", String.valueOf(delivery.deliveryId()), null));
             LOG.warn("NOTIFY_DEAD deliveryId={} retryCount={}",
                     delivery.deliveryId(), retryCount);
+        }
+    }
+
+    /**
+     * 尝试投递一条记录。
+     *
+     * @param delivery 待投递记录
+     * @return null = 成功已受理；否则为失败原因（写入 last_error）
+     */
+    private String trySend(PendingDelivery delivery) {
+        if (delivery.deviceToken() == null || delivery.deviceToken().isBlank()) {
+            LOG.info("NOTIFY_NO_TOKEN deliveryId={} userId={}",
+                    delivery.deliveryId(), delivery.userId());
+            return "NO_PUSH_TOKEN";
+        }
+        try {
+            if (pushPort.send(delivery.notificationId(), delivery.userId(),
+                    delivery.deviceToken(), delivery.title(), delivery.content())) {
+                return null;
+            }
+            return "PUSH_SEND_REJECTED";
+        } catch (RuntimeException e) {
+            LOG.error("NOTIFY_PUSH_ERROR deliveryId={} notificationId={}",
+                    delivery.deliveryId(), delivery.notificationId(), e);
+            return truncate(e.getMessage());
         }
     }
 
