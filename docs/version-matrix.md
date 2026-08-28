@@ -62,6 +62,7 @@
 | logstash-logback-encoder | `logstash-logback-encoder.version` | 9.0 | ✅ | MaskingJsonEncoderTest 编码输出验证 |
 | archunit-junit5 | `archunit.version` | **1.5.0**（原 1.4.0） | ✅ | ArchitectureTest；1.4.0 的 ASM 不识别 class file 69，升级后通过 |
 | h2（test） | Boot BOM 管理 | **2.4.240** | ✅ | PostgreSQL 兼容模式内存库；T1 探针类型矩阵（BIGSERIAL / TIMESTAMP WITH TIME ZONE / JSONB ✅，`TIMESTAMPTZ` 缩写 ❌），T4 实测全量迁移链路 |
+| wiremock-standalone（test） | `wiremock.version` | **3.9.1** | ✅ | M6 引入（D49）：外部 AI/语音 HTTP 依赖故障注入模拟；shaded 工件内联 Jackson 2/Jetty，不与 Boot 4 Jackson 3 冲突；`AiHttpDegradationWireMockTest` 实测通过（超时/5xx/畸形→600001 + 熔断 OPEN→HALF_OPEN→CLOSED） |
 
 ## 3. 质量工具链
 

@@ -45,6 +45,11 @@
              Testcontainers 版本随 Boot BOM 管理（2.0.5）；2.x 工件更名为 testcontainers-* -->
         <rest-assured.version>6.0.1</rest-assured.version>
 
+        <!-- ==== M6 集成测试（M6-detailed-design.md §5.1 D49）：外部 AI/语音 HTTP
+             依赖的故障注入模拟。wiremock-standalone 为 shaded 工件（内联 Jackson 2 /
+             Jetty），不与 Boot 4 的 Jackson 3 冲突；版本经 spike 锁定至 docs/version-matrix.md -->
+        <wiremock.version>3.9.1</wiremock.version>
+
         <!-- ==== M2 性能基准（设计 §15）：performance 标签默认排除 ====
              手动启用：mvn test -Dgroups=performance "-Dsurefire.excludedGroups=" -->
         <surefire.excludedGroups>performance</surefire.excludedGroups>
@@ -202,6 +207,14 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- WireMock：外部 AI/语音 HTTP 依赖的故障注入模拟（M6 设计 §5.1 D49）
+             standalone 为 shaded 工件，test scope，不进入运行时镜像 -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

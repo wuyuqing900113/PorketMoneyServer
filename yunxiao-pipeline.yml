@@ -34,11 +34,14 @@ pipeline:
           # mvn clean verify 已内联：单测 + JaCoCo(≥80%) + Checkstyle + PMD + SpotBugs
           # 任一门禁失败 → 阶段失败 → MR 禁止合入
 
-    # ---- 阶段 3：云效自带代码检测（与阶段 2 并行） ----
+    # ---- 阶段 3：云效自带代码检测（与阶段 2 并行，D48） ----
+    # D48：修正 M0 D8「自建/SonarCloud」决策，不引入独立 SonarQube，
+    # 以云效「代码检测」组件承载安全/规范扫描 + 重复率门禁。
     - name: code-inspection
       jobs:
         - name: yunxiao-code-check
-          component: 代码检测   # 云效平台自带安全/规范扫描，无阻断级问题方可通过
+          component: 代码检测   # 云效平台自带安全/规范扫描
+          # 门禁：无阻断级/严重问题 + 重复率 ≤ 3%（M0 §11.3 口径平移）方可通过
 
     # ---- 阶段 4：制品归档（M7 前不构建镜像） ----
     - name: archive
@@ -47,4 +50,4 @@ pipeline:
           steps:
             - upload: target/*.jar
 
-  # SonarQube 门禁：M6 前接入（决策 D8），接入后在此追加 sonar 阶段
+  # SonarQube 门禁：不再接入（D48）—— 由云效「代码检测」组件（阶段 3）承载等效质量门禁
