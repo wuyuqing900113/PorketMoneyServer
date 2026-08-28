@@ -1,0 +1,64 @@
+# ============================================================
+# 生产编排参考（M7 设计 §5，D57）
+# ECS 上以 Docker 运行单体的基线；镜像托管于 ACR，敏感值经环境变量注入
+# （由云效流水线部署阶段 / ECS 上 .env 提供，.env 不入仓库）。
+#
+# 部署：
+#   export ACR_NAMESPACE=<acr-registry>/<namespace>
+#   export APP_TAG=<发布镜像 tag，如 v1.0.0 或 BUILD_TAG>
+#   docker compose -f config/docker/docker-compose.prod.yml up -d
+#
+# 说明：本文件为「单 ECS 单机」参考；双可用区两台 ECS 各跑一份，
+#       前置 SLB 做健康检查与权重分流（灰度/蓝绿，见 release-runbook.md）。
+# ============================================================
+services:
+  pocket-money:
+    image: ${ACR_NAMESPACE}/pocket-money-server:${APP_TAG:-latest}
+    container_name: pocket-money
+    restart: always
+    ports:
+      # 仅监听内网；公网经 SLB HTTPS 终结后转发，ECS 安全组仅放行 SLB 来源
+      - "8080:8080"
+    environment:
+      # ---- 运行 profile（生产：关 Swagger UI、info 日志，application-prod.yml） ----
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: "8080"
+
+      # ---- 数据库（RDS PostgreSQL 18，VPC 内网地址；无默认值，缺失即 fail-fast） ----
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # ---- 密钥（云效凭据库托管，禁止入镜像/入仓库） ----
+      JWT_SECRET: ${JWT_SECRET}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+
+      # ---- 可观测性（ARMS agent 以 -javaagent 挂载；SLS 由宿主机 Logtail 采集） ----
+      # ARMS LicenseKey / 应用名等由部署脚本以 JAVA_TOOL_OPTIONS 注入，不在此硬编码
+
+      # ---- 业务开关（生产默认值；通知外部推送通道待拍板，保持 false） ----
+      AI_MOCK: "true"
+      NOTIFY_PUSH_ENABLED: "false"
+    volumes:
+      # 应用日志 + GC 日志持久化（供 SLS Logtail 采集 / 故障排查）
+      - pocket-logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          # 垂直扩展基线（M7 §5.1）：2 vCPU / 4 GB 起步，按需升配
+          cpus: "2.0"
+          memory: 4g
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  pocket-logs:

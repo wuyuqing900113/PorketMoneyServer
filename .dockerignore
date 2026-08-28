@@ -1,0 +1,31 @@
+# 构建上下文瘦身（M7 设计 §4.2）：镜像构建只需 pom / src / config(质量规则)
+# 排除一切与构建无关的内容，加速上下文传输并避免泄漏本地/敏感文件
+
+# 构建产物（镜像内重新构建，不携带本地 target）
+target/
+
+# VCS 与 IDE
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+
+# 文档与脚本（运行时不需要；jmeter/secret-scan 属 CI 资产）
+docs/
+scripts/
+*.md
+CLAUDE.md
+
+# 本地基础设施编排（生产编排单独见 config/docker/docker-compose.prod.yml）
+config/docker/
+
+# 环境与密钥（禁止进入镜像；敏感值一律运行时环境变量注入）
+.env
+.env.*
+!.env.example
+
+# 日志与临时文件
+logs/
+*.log
+*.tmp

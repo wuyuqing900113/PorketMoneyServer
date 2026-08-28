@@ -226,3 +226,22 @@ M1 WBS T1–T8 全部完成，DoD 验证明细见 §9。
 
 **遗留**（不阻塞 M1 合入，见设计 §16）：DoD #5 待 Docker 环境修复后关闭——届时
 `docs/version-matrix.md` postgresql ⚠️ → ✅，PG 套件群（含权限矩阵 60 用例）全量实跑。
+
+---
+
+## 10. M7 容器基础镜像（Docker，待 spike 验证）
+
+> M7 设计 §4（D56）。本机 Docker 守护进程不可用（同 M1 postgresql ⚠️ 口径），
+> tag 为锁定目标值，Docker 就绪后执行 `docker build` 冒烟验证（镜像可构建 +
+> 健康检查转 UP）方可置 ✅。
+
+| 镜像 | tag | 阶段 | 状态 | 备注 |
+|---|---|---|---|---|
+| maven | `3.9.16-eclipse-temurin-25` | builder | ⚠️ 待 Docker spike | 含 Maven 3.9.16 + JDK 25，跑 `mvn clean verify` 全门禁；与 Enforcer 基线 [25,26) / [3.9.16,) 一致 |
+| eclipse-temurin | `25-jre` | runtime | ⚠️ 待 Docker spike | JRE 25 运行时（glibc，支持 ZGC 与虚拟线程）；非 root 运行；内置 apt 装 curl 供 HEALTHCHECK |
+
+**M7 构建验证项**（Docker 就绪后）：
+1. `docker build -t pocket-money-server:m7 .` 构建成功（builder 全门禁通过）。
+2. 容器启动后 `/actuator/health` 由 401/未就绪 → `UP`（HEALTHCHECK start-period 40s 内）。
+3. 分层 jar 生效（`dependencies` 层缓存命中，二次构建仅重打 `application` 层）。
+4. 容器内进程为非 root（`pocket` 用户），`/app/logs/gc.log` 可写。

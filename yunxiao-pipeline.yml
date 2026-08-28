@@ -1,11 +1,20 @@
 # ============================================================
-# 阿里云云效 Flow 流水线（参考定义，M0 设计 §12）
+# 阿里云云效 Flow 流水线（参考定义；M0 设计 §12 + M7 设计 §7 部署发布）
 # 接入时在云效控制台创建流水线并对照本文件配置；
 # 云效 Flow 的实际 YAML 字段以控制台模板为准，此处固化的是阶段与命令基线。
+#
+# 阶段总览：
+#   1 secret-scan        敏感信息扫描（硬编码密钥拦截）
+#   2 build-and-verify   mvn clean verify 全质量门禁（JaCoCo/Checkstyle/PMD/SpotBugs）
+#   3 code-inspection    云效代码检测（安全/规范/重复率，D48，替代 SonarQube）
+#   4 archive            jar 制品归档
+#   5 docker-build-push  多阶段镜像构建并推送 ACR（M7 D56）
+#   6 deploy-test        测试环境部署 + 冒烟 + JMeter 10TPS 终验（M7 §7.1）
+#   7 deploy-prod-canary 生产金丝雀灰度发布 + 一键回滚（M7 D59）
 # ============================================================
 
 pipeline:
-  name: PorketMoneyServer-M0-Build
+  name: PorketMoneyServer-CICD
 
   sources:
     - name: repo
@@ -43,11 +52,72 @@ pipeline:
           component: 代码检测   # 云效平台自带安全/规范扫描
           # 门禁：无阻断级/严重问题 + 重复率 ≤ 3%（M0 §11.3 口径平移）方可通过
 
-    # ---- 阶段 4：制品归档（M7 前不构建镜像） ----
+    # ---- 阶段 4：制品归档 ----
     - name: archive
       jobs:
         - name: archive-jar
           steps:
             - upload: target/*.jar
+
+    # ---- 阶段 5：镜像构建与推送 ACR（M7 设计 §4/§7.1，D56） ----
+    # 仅 main 分支 / 打 tag 时执行；Dockerfile 内 builder 阶段会再跑一次
+    # mvn clean verify（双保险），镜像只可能产自全门禁通过的代码。
+    - name: docker-build-push
+      jobs:
+        - name: build-and-push
+          steps:
+            # 登录 ACR（凭据走云效凭据库，不写明文）
+            - run: docker login ${ACR_REGISTRY} -u ${ACR_USER} -p ${ACR_PASSWORD}
+            - run: >
+                docker build
+                -t ${ACR_NAMESPACE}/pocket-money-server:${BUILD_TAG}
+                -t ${ACR_NAMESPACE}/pocket-money-server:latest .
+            - run: docker push ${ACR_NAMESPACE}/pocket-money-server:${BUILD_TAG}
+
+    # ---- 阶段 6：测试环境部署 + 冒烟 + 压测终验（M7 设计 §7.1） ----
+    - name: deploy-test
+      jobs:
+        - name: deploy-test-smoke
+          steps:
+            # 测试 ECS 拉新镜像并滚动起容器（profile=test，独立 RDS + 种子数据）
+            - run: >
+                ssh deploy@${TEST_ECS}
+                "cd /opt/pocket-money && APP_TAG=${BUILD_TAG}
+                 docker compose -f config/docker/docker-compose.prod.yml up -d"
+            # 健康检查等待 readiness 转 UP
+            - run: ./scripts/deploy/wait-health.sh ${TEST_BASE_URL}
+            # 登录 / 幂等冒烟（复用 RestAssured smoke 或 curl 断言业务 code=0）
+            - run: mvn -B -ntp -Dtest=SmokeIntegrationTest verify
+            # GA 前终验：JMeter 10 TPS 压测（P95≤500ms / 错误率≤0.5%），报告存档
+            - run: >
+                jmeter -n -t scripts/jmeter/pocket-money-load.jmx
+                -l docs/performance/m6-load-result-${BUILD_TAG}.jtl
+                -e -o docs/performance/m6-load-report-${BUILD_TAG}
+
+    # ---- 阶段 7：生产金丝雀灰度发布 + 一键回滚（M7 设计 §7.2/§7.3，D59） ----
+    # 人工卡点（发布审批）后执行；灰度权重 5%→50%→100%，每步观察 ARMS 指标。
+    - name: deploy-prod-canary
+      jobs:
+        - name: canary-release
+          steps:
+            # 1) ECS-A（灰度实例）部署新版本，SLB 权重调至 5%
+            - run: >
+                ssh deploy@${PROD_ECS_A}
+                "cd /opt/pocket-money && APP_TAG=${BUILD_TAG}
+                 docker compose -f config/docker/docker-compose.prod.yml up -d"
+            - run: ./scripts/deploy/slb-set-weight.sh ${SLB_ID} ${ECS_A_WEIGHT} 5
+            # 2) 观察窗口（≥15min / ≥1000 请求）：P95≤500ms、错误率≤0.5%、无 5xx 突增
+            - run: ./scripts/deploy/observe-canary.sh ${ARMS_APP_ID} --window 15m
+            # 3) 达标放大 50% → 100%（ECS-B 滚动更新）；超限则执行回滚任务
+            - run: ./scripts/deploy/slb-set-weight.sh ${SLB_ID} ${ECS_A_WEIGHT} 50
+            - run: ./scripts/deploy/observe-canary.sh ${ARMS_APP_ID} --window 10m
+            - run: >
+                ssh deploy@${PROD_ECS_B}
+                "cd /opt/pocket-money && APP_TAG=${BUILD_TAG}
+                 docker compose -f config/docker/docker-compose.prod.yml up -d"
+            - run: ./scripts/deploy/slb-set-weight.sh ${SLB_ID} ${ECS_A_WEIGHT} 100
+      rollback:
+        # 一键回滚：重发上一稳定 tag + SLB 权重归零新版本（详见 release-runbook.md）
+        - run: ./scripts/deploy/rollback.sh ${PREV_STABLE_TAG}
 
   # SonarQube 门禁：不再接入（D48）—— 由云效「代码检测」组件（阶段 3）承载等效质量门禁
