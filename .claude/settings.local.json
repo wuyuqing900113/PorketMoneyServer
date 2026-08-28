@@ -9,7 +9,10 @@
       "Bash(mvn test *)",
       "Bash(mvn clean *)",
       "Bash(python -c ' *)",
-      "Bash(cd *)"
+      "Bash(cd *)",
+      "Bash(mvn -q -DskipTests compile)",
+      "mcp__idea__read_file",
+      "mcp__idea__search_file"
     ]
   }
 }

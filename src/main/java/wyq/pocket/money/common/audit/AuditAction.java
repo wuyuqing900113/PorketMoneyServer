@@ -124,5 +124,13 @@ public enum AuditAction {
     AI_ACTION_EXPIRED,
 
     /** AI 服务不可用降级（熔断 / 超时 / 运行期失败）。 */
-    AI_DEGRADED
+    AI_DEGRADED,
+
+    // ---- M5 通知与事件驱动动作（M5-detailed-design.md §8.2） ----
+
+    /** 通知投递成功（站内信创建 / 外部通道发送成功）。 */
+    NOTIFY_DELIVERED,
+
+    /** 外部通道重试耗尽（死信）。 */
+    NOTIFY_DELIVERY_FAILED
 }

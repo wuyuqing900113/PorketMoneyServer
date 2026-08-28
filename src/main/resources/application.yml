@@ -119,3 +119,23 @@ pocket-money:
       limit-refresh-period: ${AI_RATE_LIMIT_REFRESH_PERIOD:PT1M}
     stub:
       fail: ${AI_STUB_FAIL:false}
+  # ============================================================
+  # M5 通知与事件驱动配置（M5-detailed-design.md §11）
+  # ============================================================
+  notify:
+    # 通知总开关（站内信落库总闸）：集成测试置 false 直调 service 验证
+    enabled: ${NOTIFY_ENABLED:true}
+    # 余额不足提醒阈值（家庭级统一，0=关闭；出账后 balance_after 低于该值触发）
+    low-balance-threshold: ${NOTIFY_LOW_BALANCE_THRESHOLD:0}
+    push:
+      # 外部推送通道（鸿蒙 Push）开关：通道拍板并实现 PushPort 后置 true
+      enabled: ${NOTIFY_PUSH_ENABLED:false}
+    relay:
+      enabled: ${NOTIFY_RELAY_ENABLED:true}
+      cron: ${NOTIFY_RELAY_CRON:0 17 2 * * *}       # 每日 02:17
+      max-retry: ${NOTIFY_MAX_RETRY:3}
+      retry-backoff: ${NOTIFY_RETRY_BACKOFF:PT1M}   # 指数退避初始间隔
+    cleanup:
+      enabled: ${NOTIFY_CLEANUP_ENABLED:true}
+      cron: ${NOTIFY_CLEANUP_CRON:0 47 4 * * *}     # 每日 04:47
+      read-ttl: ${NOTIFY_READ_TTL:P30D}             # 已读通知保留期

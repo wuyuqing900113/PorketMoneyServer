@@ -2,6 +2,7 @@ package wyq.pocket.money.money.service;
 
 import java.math.BigDecimal;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,6 +10,7 @@ import wyq.pocket.money.common.exception.BusinessException;
 import wyq.pocket.money.common.web.CommonErrorCode;
 import wyq.pocket.money.money.domain.MoneyAccount;
 import wyq.pocket.money.money.domain.MoneyTransaction;
+import wyq.pocket.money.money.event.MoneyTransactionCreatedEvent;
 import wyq.pocket.money.money.domain.TxDirection;
 import wyq.pocket.money.money.dto.MoneyErrorCode;
 import wyq.pocket.money.money.mapper.MoneyAccountMapper;
@@ -37,19 +39,24 @@ public class AccountTransactionService {
 
     private final MoneyTransactionMapper transactionMapper;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     /**
      * 注入协作对象。
      *
      * @param accountService   账户服务
      * @param accountMapper    账户 Mapper
      * @param transactionMapper 流水 Mapper
+     * @param eventPublisher    领域事件发布器（记账成功通知，M5 设计 §6.1）
      */
     public AccountTransactionService(AccountService accountService,
                                      MoneyAccountMapper accountMapper,
-                                     MoneyTransactionMapper transactionMapper) {
+                                     MoneyTransactionMapper transactionMapper,
+                                     ApplicationEventPublisher eventPublisher) {
         this.accountService = accountService;
         this.accountMapper = accountMapper;
         this.transactionMapper = transactionMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -94,6 +101,9 @@ public class AccountTransactionService {
         }
         MoneyTransaction tx = buildTransaction(cmd, account, balanceAfter);
         transactionMapper.insert(tx);
+        eventPublisher.publishEvent(new MoneyTransactionCreatedEvent(tx.getFamilyId(), tx.getUserId(),
+                tx.getOperatorUserId(), tx.getDirection().name(), tx.getBizType().name(),
+                tx.getAmount(), tx.getBalanceAfter(), tx.getId(), tx.getRemark()));
         return tx;
     }
 

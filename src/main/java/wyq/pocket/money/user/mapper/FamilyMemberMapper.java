@@ -69,6 +69,16 @@ public interface FamilyMemberMapper {
     List<MemberSummary> findMembersByFamilyId(@Param("familyId") long familyId);
 
     /**
+     * 查询家庭全部家长用户 ID（M5 §5.3）：join app_user 过滤 role=PARENT。
+     *
+     * @param familyId 家庭 ID
+     * @return 家长用户 ID 列表（按成员加入顺序）
+     */
+    @Select("SELECT u.id FROM family_member fm JOIN app_user u ON u.id = fm.user_id "
+            + "WHERE fm.family_id = #{familyId} AND u.role = 'PARENT' ORDER BY fm.id")
+    List<Long> findParentUserIdsByFamilyId(@Param("familyId") long familyId);
+
+    /**
      * 删除成员关系（移除孩子，§6.4）。
      *
      * @param familyId 家庭 ID

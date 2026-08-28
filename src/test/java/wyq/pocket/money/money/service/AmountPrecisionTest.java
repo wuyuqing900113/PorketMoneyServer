@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,8 +13,10 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import wyq.pocket.money.common.exception.BusinessException;
 import wyq.pocket.money.money.domain.MoneyAccount;
@@ -40,8 +43,22 @@ class AmountPrecisionTest {
 
     private final MoneyTransactionMapper transactionMapper = mock(MoneyTransactionMapper.class);
 
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+
     private final AccountTransactionService service =
-            new AccountTransactionService(accountService, accountMapper, transactionMapper);
+            new AccountTransactionService(accountService, accountMapper, transactionMapper,
+                    eventPublisher);
+
+    @BeforeEach
+    void backfillTransactionIdOnInsert() {
+        // MyBatis @Options(useGeneratedKeys) 回填 id 仅在真实执行时发生，
+        // 单元测试 mock insert 需手动回填，避免发布事件时 tx.getId() 拆箱 NPE。
+        doAnswer(invocation -> {
+            MoneyTransaction tx = invocation.getArgument(0);
+            tx.setId(1L);
+            return 1;
+        }).when(transactionMapper).insert(any(MoneyTransaction.class));
+    }
 
     private MoneyAccount account(String balance) {
         MoneyAccount account = new MoneyAccount();

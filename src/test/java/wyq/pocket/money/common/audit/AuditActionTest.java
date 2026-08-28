@@ -40,4 +40,11 @@ class AuditActionTest {
                 AuditAction.AI_ACTION_EXPIRED,
                 AuditAction.AI_DEGRADED);
     }
+
+    @Test
+    void notifyActionsShouldBePresent() {
+        assertThat(AuditAction.values()).contains(
+                AuditAction.NOTIFY_DELIVERED,
+                AuditAction.NOTIFY_DELIVERY_FAILED);
+    }
 }

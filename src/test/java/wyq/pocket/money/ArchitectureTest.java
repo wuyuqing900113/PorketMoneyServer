@@ -36,7 +36,7 @@ class ArchitectureTest {
             "rule", List.of("user", "money"),
             "user", List.of(),
             "ai", List.of("money", "user", "finance", "rule"),
-            "notify", List.of());
+            "notify", List.of("money", "rule", "user"));
 
     private static JavaClasses importedClasses;
 
@@ -114,6 +114,36 @@ class ArchitectureTest {
                         "wyq.pocket.money.finance.mapper..", "wyq.pocket.money.finance.domain..")
                 .because("ai 不得触碰业务模块 mapper/domain，取数须经 service 层门面"
                         + "（M4 设计 §3.4）")
+                .allowEmptyShould(true)
+                .check(importedClasses);
+    }
+
+    @Test
+    void producersShouldNotDependOnNotify() {
+        noClasses()
+                .that().resideInAnyPackage(
+                        "wyq.pocket.money.money..", "wyq.pocket.money.rule..",
+                        "wyq.pocket.money.finance..", "wyq.pocket.money.ai..",
+                        "wyq.pocket.money.user..")
+                .should().dependOnClassesThat().resideInAPackage("wyq.pocket.money.notify..")
+                .because("notify 为事件单向消费端，生产方（money/rule/finance/ai/user）"
+                        + "不得依赖 notify（M5 设计 §3.4 规则①）")
+                .allowEmptyShould(true)
+                .check(importedClasses);
+    }
+
+    @Test
+    void notifyShouldNotAccessBusinessMappersOrDomains() {
+        noClasses()
+                .that().resideInAPackage("wyq.pocket.money.notify..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "wyq.pocket.money.money.mapper..", "wyq.pocket.money.money.domain..",
+                        "wyq.pocket.money.rule.mapper..", "wyq.pocket.money.rule.domain..",
+                        "wyq.pocket.money.user.mapper..", "wyq.pocket.money.user.domain..",
+                        "wyq.pocket.money.finance.mapper..", "wyq.pocket.money.finance.domain..",
+                        "wyq.pocket.money.ai.mapper..", "wyq.pocket.money.ai.domain..")
+                .because("notify 不得触碰业务模块 mapper/domain，取数须经事件 payload 与 "
+                        + "user.service 只读方法（M5 设计 §3.4 规则②）")
                 .allowEmptyShould(true)
                 .check(importedClasses);
     }

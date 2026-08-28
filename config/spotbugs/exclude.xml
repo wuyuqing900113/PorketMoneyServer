@@ -154,6 +154,15 @@
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 
+    <!-- EI_EXPOSE_REP2：notify 模块（M5）service（含 service.event 监听器）、
+         controller、job 构造注入的协作者一律为容器级单例（MyBatis Mapper 代理、
+         @Service/@Component、Clock、PushPort），注入后仅调用其方法、不修改其
+         状态，"存储外部可变对象"在该惯例下为误报。 -->
+    <Match>
+        <Class name="~wyq\.pocket\.money\.notify\.(service|controller|job)\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
     <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2：common.ai 为 M4 抽象层，其中
          IntentResult / ToolDefinition 值记录紧凑构造器已用 Map.copyOf 固化
          参数映射（构造后不可变），其余 ChatPort 等为纯接口。访问器返回

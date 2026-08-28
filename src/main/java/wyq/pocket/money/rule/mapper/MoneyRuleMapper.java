@@ -142,6 +142,26 @@ public interface MoneyRuleMapper {
     int archiveExpired(@Param("month") String month);
 
     /**
+     * 到期规则查询：end_month 早于当月的 ACTIVE / PAUSED 规则（M5 设计 §6.1）。
+     *
+     * @param month 当月（YYYY-MM）
+     * @return 到期规则列表
+     */
+    @Select("SELECT " + RULE_COLUMNS + " FROM money_rule WHERE status <> 'ARCHIVED' "
+            + "AND end_month IS NOT NULL AND end_month < #{month} ORDER BY id")
+    List<MoneyRule> findExpired(@Param("month") String month);
+
+    /**
+     * 单条归档（幂等）：置 ARCHIVED，已归档时返回 0 以避免重复发事件。
+     *
+     * @param id 规则 ID
+     * @return 影响行数（0 表示已归档或不存在）
+     */
+    @Update("UPDATE money_rule SET status = 'ARCHIVED', updated_at = now() "
+            + "WHERE id = #{id} AND status <> 'ARCHIVED'")
+    int archiveById(@Param("id") long id);
+
+    /**
      * 暂停受益人全部 ACTIVE 规则（成员移除联动）。
      *
      * @param userId 受益人用户 ID

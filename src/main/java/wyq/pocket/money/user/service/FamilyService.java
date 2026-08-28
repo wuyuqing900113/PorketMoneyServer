@@ -125,6 +125,27 @@ public class FamilyService {
     }
 
     /**
+     * 家庭全部家长用户 ID（M5 §5.3）：只读、无鉴权（供定时/事件路径）。
+     *
+     * @param familyId 家庭 ID
+     * @return 家长用户 ID 列表
+     */
+    public List<Long> listParentUserIds(long familyId) {
+        return familyMemberMapper.findParentUserIdsByFamilyId(familyId);
+    }
+
+    /**
+     * 解析用户昵称（M5 §5.3）：供通知文案回显。
+     *
+     * @param userId 用户 ID
+     * @return 昵称，用户不存在返回 null
+     */
+    public String resolveNickname(long userId) {
+        List<User> users = userMapper.findNicknamesByIds(List.of(userId));
+        return users.isEmpty() ? null : users.get(0).getNickname();
+    }
+
+    /**
      * 修改家庭名（§6.2 #10，仅家长）。
      *
      * @param familyId  家庭 ID
