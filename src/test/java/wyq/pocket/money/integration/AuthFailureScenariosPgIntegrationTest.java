@@ -30,6 +30,11 @@ class AuthFailureScenariosPgIntegrationTest extends AbstractPostgresIntegrationT
 
     private static final String PHONE = "13910000011";
 
+    /** 各失败用例独立手机号：同类内多方法共享库表，避免固定号段跨方法撞 200001。 */
+    private static final String PHONE_EXPIRED_TOKEN = "13910000013";
+
+    private static final String PHONE_TAMPERED_TOKEN = "13910000014";
+
     /** 与基座 @SpringBootTest properties 中 JWT_SECRET 一致的测试零值密钥。 */
     private static final String TEST_JWT_SECRET =
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
@@ -47,7 +52,7 @@ class AuthFailureScenariosPgIntegrationTest extends AbstractPostgresIntegrationT
 
     @Test
     void expiredAccessTokenShouldReturn401And100003() {
-        TestAccount account = registerAndLogin(PHONE);
+        TestAccount account = registerAndLogin(PHONE_EXPIRED_TOKEN);
         String expired = forgeExpiredAccessToken(account.userId(), account.familyId());
         withToken(expired).when().get("/api/v1/users/me")
                 .then().statusCode(401).body("code", equalTo(100003));
@@ -55,7 +60,7 @@ class AuthFailureScenariosPgIntegrationTest extends AbstractPostgresIntegrationT
 
     @Test
     void tamperedSignatureShouldReturn401And100003() {
-        TestAccount account = registerAndLogin(PHONE);
+        TestAccount account = registerAndLogin(PHONE_TAMPERED_TOKEN);
         String token = account.accessToken();
         char last = token.charAt(token.length() - 1);
         char replacement = last == 'A' ? 'B' : 'A';

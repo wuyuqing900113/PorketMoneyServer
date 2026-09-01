@@ -40,5 +40,5 @@
 - ASR 语音识别 / TTS 语音合成 provider 尚未接入：真实大模型对话已接 DeepSeek（D67），语音能力仅有 `SpeechToTextPort` / `TextToSpeechPort` 端口契约（无适配器），provider 选型（roadmap 前置决策 #3）后迭代。
 - Embedding 语义匹配仅有端口契约（`EmbeddingPort`），无适配器。
 - 短信通道未接入：外部推送已接鸿蒙 Push Kit（D68），短信渠道待后续扩展（`PushPort` 端口按 provider 扩展）。
-- Docker 基础镜像 tag 待构建环境 spike 锁定（见 `docs/version-matrix.md` §10）。
+- ~~Docker 基础镜像 tag 待构建环境 spike 锁定~~ —— 已关闭（2026-08-31）：本机 Docker Desktop 29.7.2 完成 E1 spike，`pocket-money-server:m7` 镜像构建成功，基础镜像 tag+digest 锁定（`docs/version-matrix.md` §10），非 root `pocket` 运行、Spring Boot 分层 jar、ZGC、HEALTHCHECK UP，对真实 PostgreSQL 18 跑通 Flyway V1–V10 与注册/登录/脱敏 E2E。适配 Spring Boot 4 的分层 jar jarmode 更名（`layertools`→`tools`，D73）；PG 实跑顺带修复审计详情 jsonb 严格性缺陷（D71）。
 - 云上演练项（10 TPS 压测终验、金丝雀/回滚演练、PITR 恢复演练、告警链路演练、SLS 脱敏抽检、首轮渗透测试）在目标环境执行，准入状态以 `docs/release/go-live-checklist.md` 签核为准。

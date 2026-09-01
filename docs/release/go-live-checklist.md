@@ -33,7 +33,7 @@
 - [ ] 云效流水线阶段 1–4 通过（secret-scan / build-and-verify / code-inspection 无阻断严重 / archive）
 - [ ] Flyway 迁移 V1–V10 评审无变更
 - [ ] `CHANGELOG.md` 1.0.0 条目定稿（功能清单 / 已知限制 / 部署须知）
-- [ ] Docker 镜像构建 spike 完成：基础镜像 tag 锁定并回填 `docs/version-matrix.md` §10；镜像内全门禁通过、非 root 运行、HEALTHCHECK UP（**E1**）
+- [x] Docker 镜像构建 spike 完成：基础镜像 tag+digest 锁定并回填 `docs/version-matrix.md` §10；镜像内全门禁通过、非 root 运行、HEALTHCHECK UP（**E1**，2026-08-31 本机 Docker Desktop 29.7.2 实测：`pocket-money-server:m7` 构建成功，非 root `pocket`（uid=999）、分层 jar、ZGC gc.log 可写、对真实 postgres:18 Flyway V1–V10 + 注册/登录/脱敏 E2E、health UP；Boot 4 jarmode layertools→tools 修复见 D73）
 
 ### 1.2 环境与密钥
 
@@ -128,4 +128,5 @@
 | AI 准确率回归 | 模型/Prompt 每次变更后 | `ai/eval` 评测报告 | AI 负责人 |
 | 事件复盘 | 每次 P1 事件后 | 事件时间线与改进项 | 全员 |
 
-> 环境阻塞说明：E1–E10 需阿里云/Docker 目标环境，开发环境不可达；本检查单为执行基线，证据按 D64 归档后方可 Go。
+> 环境阻塞说明：**E1（Docker 镜像构建 spike）已在本机 Docker Desktop 完成并关闭（2026-08-31）**；
+> E2–E10 需阿里云目标环境，开发环境不可达。本检查单为执行基线，证据按 D64 归档后方可 Go。

@@ -54,7 +54,9 @@ class ReconciliationServiceTest {
         assertThat(entry.action()).isEqualTo(AuditAction.RECONCILE_MISMATCH);
         assertThat(entry.targetType()).isEqualTo("MONEY_ACCOUNT");
         assertThat(entry.targetId()).isEqualTo("3");
-        assertThat(entry.detail()).contains("mismatched=[1]").contains("orphan=[2, 3]");
+        // detail 为合法 JSON（audit_log.detail 在 PostgreSQL 为 jsonb）：List.toString() 即 JSON 数组
+        assertThat(entry.detail()).contains("\"mismatchedAccounts\":[1]")
+                .contains("\"orphanAccounts\":[2, 3]");
     }
 
     @Test

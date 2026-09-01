@@ -25,14 +25,18 @@ import wyq.pocket.money.rule.job.RuleExpiryJob;
  * 规则到期归档 → 通知集成测试（M5 设计 §10.2 NotifyRuleExpiryPgIntegrationTest）：
  * 固定时钟 2026-08，创建 end_month=2026-07 的规则，触发 RuleExpiryJob 归档，
  * 受益人 + 家长均收到 RULE_EXPIRED。
+ *
+ * <p>固定时钟以同名 Bean {@code clock} 替换 {@code ClockConfig} 的系统时钟
+ * （单 Bean，全链路统一为固定时刻），名称覆盖需放开 Bean 定义覆写。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "JWT_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-        "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 class NotifyRuleExpiryPgIntegrationTest extends AbstractPostgresIntegrationTest {
 
-    /** 固定时钟：2026-08-19（Asia/Shanghai），到期月 = 2026-08。 */
+    /** 固定时钟：2026-08-19（Asia/Shanghai），到期月 = 2026-08；Bean 名同名覆盖系统时钟。 */
     @TestConfiguration
     static class FixedClockConfig {
 

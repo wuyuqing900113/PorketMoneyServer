@@ -50,8 +50,11 @@ public class ReconciliationService {
         }
         SECURITY_LOG.error("RECONCILE_MISMATCH mismatchedAccounts={} orphanAccounts={}",
                 mismatched, orphan);
+        // detail 落 audit_log.detail（PostgreSQL jsonb，须为合法 JSON）；账户 ID 列表为
+        // List<Long>，其 toString 形如 [1, 2]，即合法 JSON 数组（空表为 []）。
         auditService.record(new AuditEntry(null, AuditAction.RECONCILE_MISMATCH,
                 "MONEY_ACCOUNT", String.valueOf(mismatched.size() + orphan.size()),
-                "mismatched=" + mismatched + ";orphan=" + orphan));
+                "{\"mismatchedAccounts\":" + mismatched
+                        + ",\"orphanAccounts\":" + orphan + "}"));
     }
 }

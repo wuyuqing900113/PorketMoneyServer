@@ -27,15 +27,18 @@ import wyq.pocket.money.rule.service.RuleSettlementService;
  * 发放日发放、重复结算幂等跳过、暂停不发放、移除成员即停发。
  *
  * <p>覆盖基座属性：固定时钟 2026-08-19、停用定时 Job 避免与手工结算竞争。
+ * 固定时钟以同名 Bean {@code clock} 替换 {@code ClockConfig} 的系统时钟（单 Bean，
+ * 全链路统一为固定时刻），名称覆盖需放开 Bean 定义覆写。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "JWT_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
         "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        "pocket-money.money.settlement.enabled=false"
+        "pocket-money.money.settlement.enabled=false",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 class RuleSettlementPgIntegrationTest extends AbstractPostgresIntegrationTest {
 
-    /** 固定时钟：2026-08-19（Asia/Shanghai），结算月 = 2026-08。 */
+    /** 固定时钟：2026-08-19（Asia/Shanghai），结算月 = 2026-08；Bean 名同名覆盖系统时钟。 */
     @TestConfiguration
     static class FixedClockConfig {
 

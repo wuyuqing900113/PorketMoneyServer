@@ -33,6 +33,15 @@
 > （198 测试 / 20 跳过＝PG 用例待 Docker；全门禁通过）。OpenAPI bearerAuth 安全方案 +
 > 15 端点 SpringDoc 注解读产出；checkstyle Javadoc 规则按 M0 §11.2 切换 warning→error；
 > AuditTrail PG 套件补齐 DoD 审计断言；README 更新至 M1 基线；DoD 验证记录见 §9。
+>
+> **Docker 就绪 · PG 实跑 · 镜像 spike 全部关闭（2026-08-31）**：本机 Docker Desktop
+> 29.7.2 就绪，① PG 18 套件**首次真跑全绿**——`mvn clean verify` **650 测试 / 0 失败 /
+> 0 错误 / 0 跳过**（其中 `*PgIntegrationTest` 197 全绿），Checkstyle/PMD/SpotBugs 0 违规，
+> JaCoCo **95.1% 指令 / 83.6% 分支**（≥80% 门禁）；postgresql / Testcontainers 行由 ⚠️ 转 ✅，
+> M1 DoD #5 关闭（见 §9）。② 生产镜像 E1 spike 通过——`docker build -t pocket-money-server:m7 .`
+> 构建成功（builder 内全门禁），非 root `pocket` 运行、分层 jar、ZGC、HEALTHCHECK UP、
+> 对真实 postgres:18 跑通 Flyway V1–V10 与注册/登录/脱敏 E2E；基础镜像 digest 锁定见 §10。
+> ③ PG 实跑暴露并修复的生产缺陷（jsonb 审计详情）与单例容器/测试桩/限流夹具等决策见 §11（D69–D74）。
 
 ## 1. 核心运行时
 
@@ -53,10 +62,10 @@
 | mybatis-spring-boot-starter | `mybatis-spring-boot.version` | 4.0.0 | ✅ | SmokeIntegrationTest：`SystemHealthMapper.ping()==1` |
 | flyway-core / flyway-database-postgresql | Boot BOM 管理 | 12.4.0 | ✅ | H2 支持内置于 flyway-core（D4）；**迁移链路 T4 才首次真实执行**（此前自动配置缺失，见 M1-D7），由 AuthFlowH2IntegrationTest 在 H2 实测 V2/V3 |
 | spring-boot-flyway | Boot BOM 管理 | 随 Boot 4.1.0 | ✅ | **Boot 4 自动配置模块化拆分**：仅引 flyway-core 不触发自动装配（构建日志零 flyway 条目、集成测试全空库），补入后迁移正常执行（M1-D7） |
-| postgresql 驱动 | Boot BOM 管理 | — | ⚠️ | 依赖解析通过；PostgresContainerIntegrationTest 已就绪（TC 2.0.5 + `@ServiceConnection`），Docker 守护进程未启动（npipe 503）自动跳过，真实 PG 运行验证仍待 Docker 就绪 |
+| postgresql 驱动 | Boot BOM 管理 | **42.7.11** | ✅ | Docker 就绪后真跑实证：197 个 PG 集成测试连真实 PostgreSQL 18.6 全绿（`@ServiceConnection` 装配）；Flyway V1–V10 迁移、AES 加密列、jsonb 审计详情、脱敏回显 E2E 通过（2026-08-31，见 §11） |
 | rest-assured | `rest-assured.version` | **6.0.1** | ✅ | M1 spike S3：不在 Boot BOM 管理范围，显式版本属性；RANDOM_PORT + `@LocalServerPort`（Boot 4 移至 `boot.test.web.server` 包）断言通过 |
-| spring-boot-testcontainers | 随 Boot 4.1.0 | ✅（装配） | M1 spike S4：`@ServiceConnection` 装配链路通过；容器运行部分随 Docker 未就绪跳过 |
-| testcontainers-postgresql / testcontainers-junit-jupiter | Boot BOM 管理 | **2.0.5** | ⚠️ | M1 spike S4：**2.x 工件更名**（原 `postgresql` / `junit-jupiter`）；`PostgreSQLContainer` 不再是泛型类；`disabledWithoutDocker=true` 跳过验证生效 |
+| spring-boot-testcontainers | 随 Boot 4.1.0 | ✅ | M1 spike S4：`@ServiceConnection` 装配链路通过；Docker 就绪后 197 个 PG 用例经单例容器真跑全绿（容器生命周期修正见 §11 D69） |
+| testcontainers-postgresql / testcontainers-junit-jupiter | Boot BOM 管理 | **2.0.5** | ✅ | M1 spike S4：**2.x 工件更名**（原 `postgresql` / `junit-jupiter`）；`PostgreSQLContainer` 不再是泛型类；Docker 就绪后真跑实证（含 Ryuk 0.14.0 回收）；镜像构建内因无 Docker socket 按 `disabledWithoutDocker=true` 自动跳过（见 §11 D74） |
 | commons-lang3 | Boot BOM 管理 | 3.20.0 | ✅ | 解析通过 |
 | springdoc-openapi-starter-webmvc-ui | `springdoc.version` | 3.0.0 | ✅ | SmokeIntegrationTest：`/v3/api-docs` 返回 200 |
 | logstash-logback-encoder | `logstash-logback-encoder.version` | 9.0 | ✅ | MaskingJsonEncoderTest 编码输出验证 |
@@ -75,7 +84,7 @@
 | maven-pmd-plugin | `maven-pmd-plugin.version` | 3.26.0 | ✅ | **PMD 核心经插件依赖覆盖升级**（见 D5） |
 | PMD 核心 | `pmd.version` | **7.26.0** | ✅ | 规则集按 PMD 7 编写；7.7.0 无法读取 JDK 25 运行时类 |
 | spotbugs-maven-plugin | `spotbugs-maven-plugin.version` | **4.10.3.0**（原 4.9.3.0） | ✅ | 4.9.3.0 的 ASM 不识别 class file 69，升级后通过；定点豁免见 `config/spotbugs/exclude.xml` |
-| JaCoCo | `jacoco.version` | 0.8.14 | ✅ | JDK 25 插桩正常；行覆盖率 91.0%，≥ 80% 门禁 |
+| JaCoCo | `jacoco.version` | 0.8.14 | ✅ | JDK 25 插桩正常；Docker 就绪全量实跑后指令覆盖率 95.1% / 分支 83.6%，≥ 80% BUNDLE 门禁（2026-08-31） |
 
 ## 4. 已决策记录（Spike 结论）
 
@@ -119,9 +128,9 @@
 | S1 | Boot 4.1.0 + starter-security | ✅ | STATELESS 过滤链、`@EnableMethodSecurity`、公开路径白名单、401 + Result(100003) JSON 契约全部通过（SecuritySmokeIntegrationTest 3 用例） |
 | S2 | spring-security-oauth2-jose HS256 | ✅ | 签验通过（JwtTokenServiceTest 7 用例），**无需切换 jjwt 预案**；Security 7 API 变化见 M1-D1 |
 | S3 | RestAssured + RANDOM_PORT | ✅ | 6.0.1 通过；`@LocalServerPort` 移至 `org.springframework.boot.test.web.server` 包（Boot 4 测试切片重构） |
-| S4 | Testcontainers + `@ServiceConnection` + Flyway | ⚠️ | 装配链路通过；**Docker 守护进程未启动**（npipe://localhost:2375 → 503），`disabledWithoutDocker=true` 自动跳过 2 用例，真实 PG 18 运行验证仍待 Docker 就绪（无需 `DynamicPropertyRegistry` 预案） |
+| S4 | Testcontainers + `@ServiceConnection` + Flyway | ✅ | Docker 就绪后真跑通过：197 个 PG 用例连真实 PostgreSQL 18.6 全绿，Flyway V1–V10 迁移落地（无需 `DynamicPropertyRegistry` 预案）。单例容器改为**静态初始化块手动启动**（`@Container` 每子类重启致端口漂移，见 §11 D69）；镜像构建内因无 Docker socket 自动跳过（D74） |
 | S5 | MyBatis 4.0.0 与 Security 共存 | ✅ | 两个 `@SpringBootTest` 套件上下文正常启动，无自动配置冲突 |
-| S6 | EncryptedFieldTypeHandler 真实往返 | ✅(H2) / ⏸(PG) | T4 AuthFlowH2IntegrationTest 实证真实 MyBatis 栈写加密 / 读解密（/users/me 脱敏回显 139****0001）；PG 往返待 Docker 就绪由 T7 覆盖；算法层由 DataEncryptorTest 6 用例固化（GCM 往返 / 篡改拒绝 / IV 随机性 / 密钥校验）；注册推断陷阱见 M1-D8 |
+| S6 | EncryptedFieldTypeHandler 真实往返 | ✅ | T4 AuthFlowH2IntegrationTest 实证真实 MyBatis 栈写加密 / 读解密（/users/me 脱敏回显 139****0001）；Docker 就绪后由 EncryptionAtRestPgIntegrationTest 在**真实 PG 18.6** 覆盖（哈希/密文/库内无明文/往返一致/脱敏回显/孩子行 NULL 全绿），并经生产镜像 E2E 复证（注册后 `app_user.phone_encrypted/phone_hash` 落库、无明文，/users/me 回显 `139****0001`）；算法层由 DataEncryptorTest 6 用例固化（GCM 往返 / 篡改拒绝 / IV 随机性 / 密钥校验）；注册推断陷阱见 M1-D8 |
 
 ### M1 新增决策记录
 
@@ -219,30 +228,79 @@ M1 WBS T1–T8 全部完成，DoD 验证明细见 §9。
 | 2 | 未认证访问受保护接口一律 100003（白名单除外） | ✅ | PermissionMatrix 匿名身份 15 用例（401+100003）+ JwtAuthenticationFilterTest 10 用例 |
 | 3 | 权限矩阵参数化测试：CHILD 家长专属接口 100004、越权数据访问 100004 | ✅ 套件落盘（Docker 就绪转实跑） | PermissionMatrixPgIntegrationTest 15 端点 × 4 身份 = 60 用例 + 跨家庭 CHILD 独立用例；H2 侧 FamilyFlowH2IntegrationTest 已实证 403+100004 双层守卫 |
 | 4 | 单测覆盖率 ≥ 80%，`mvn clean verify` 全门禁绿 | ✅ | 198 测试 / 0 失败 / JaCoCo BUNDLE ≥80% 门禁通过（BUILD SUCCESS） |
-| 5 | Docker 就绪后 PG 套件全绿，postgresql ⚠️ → ✅ | ⏸ 未达成（环境阻塞） | Docker Desktop 无法启动（daemon 503），18 个 PG 用例 `disabledWithoutDocker` 自动跳过；修复 Docker 后全量跑绿方可置 ✅（设计 R1） |
-| 6 | 审计动作全部落 audit_log（集成测试断言关键动作行）；安全日志按 §9.2 输出 SECURITY logger | ✅ 套件落盘（Docker 就绪转实跑） | AuditTrailPgIntegrationTest 按 user_id+action 精确断言 REGISTER/FAMILY_CREATE/LOGIN_SUCCESS/LOGIN_FAILURE/CHILD_CREATE/FAMILY_UPDATE/CHILD_PASSWORD_RESET/MEMBER_REMOVE/TOKEN_REFRESH/TOKEN_REUSE_DETECTED/LOGOUT/PASSWORD_CHANGE；SecurityLogger 各链路埋点（UNAUTHENTICATED_REJECT / ACCESS_DENIED / TOKEN_REUSE_DETECTED / ACCOUNT_LOCKED / LOGIN_FAILURE） |
-| 7 | EncryptionAtRestIT 通过（库中无明文手机号、解密往返一致）；全仓库敏感信息扫描零命中 | ✅ 套件落盘（待 Docker）；扫描通过（2 处已评审误报） | EncryptionAtRestPgIntegrationTest（哈希/密文/无明文/往返/脱敏回显/孩子行 NULL）；secret-scan 等价扫描仅 2 行命中为 MaskingRulesTest 脱敏样例输入，裁定误报保留（M1-D12） |
+| 5 | Docker 就绪后 PG 套件全绿，postgresql ⚠️ → ✅ | ✅ 已达成（2026-08-31） | Docker Desktop 29.7.2 就绪，`mvn clean verify` **650 测试 / 0 失败 / 0 跳过**，其中 `*PgIntegrationTest` **197 用例连真实 PostgreSQL 18.6 全绿**（含权限矩阵 56 参数化用例）；postgresql / Testcontainers 行已转 ✅。PG 严格性暴露的 jsonb 审计详情缺陷同步修复（见 §11 D71） |
+| 6 | 审计动作全部落 audit_log（集成测试断言关键动作行）；安全日志按 §9.2 输出 SECURITY logger | ✅ | AuditTrailPgIntegrationTest + M2AuditTrailPgIntegrationTest 于**真实 PG 18.6** 按 user_id+action 精确断言（REGISTER/FAMILY_CREATE/LOGIN_SUCCESS/LOGIN_FAILURE/CHILD_CREATE/FAMILY_UPDATE/CHILD_PASSWORD_RESET/MEMBER_REMOVE/TOKEN_REFRESH/TOKEN_REUSE_DETECTED/LOGOUT/PASSWORD_CHANGE 及 M2 全部 16 动作）全绿；SecurityLogger 各链路埋点（UNAUTHENTICATED_REJECT / ACCESS_DENIED / TOKEN_REUSE_DETECTED / ACCOUNT_LOCKED / LOGIN_FAILURE） |
+| 7 | EncryptionAtRestIT 通过（库中无明文手机号、解密往返一致）；全仓库敏感信息扫描零命中 | ✅ | EncryptionAtRestPgIntegrationTest 真实 PG 全绿（哈希/密文/无明文/往返/脱敏回显/孩子行 NULL），生产镜像 E2E 复证；secret-scan 等价扫描仅 2 行命中为 MaskingRulesTest 脱敏样例输入，裁定误报保留（M1-D12） |
 | 8 | OpenAPI 认证部分文档产出（Swagger UI 可查全部 M1 端点与错误码说明） | ✅ | OpenApiConfig bearerAuth 方案 + 契约总则；3 控制器 15 端点 @Tag/@Operation/@SecurityRequirement；/v3/api-docs 200（SmokeIntegrationTest） |
 | 9 | mcp / 登录锁定 / refresh 轮转三项安全机制专项测试 | ✅ | ChildFirstLoginPgIntegrationTest（200010 拦截→改密放行→旧口令失效）、LoginLockoutPgIntegrationTest（PT2S 锁定→200003→到期恢复）、RefreshReusePgIntegrationTest（重放→100003+全吊销→重登恢复）；H2 侧 AuthFlowH2 亦覆盖轮转与 mcp |
 
-**遗留**（不阻塞 M1 合入，见设计 §16）：DoD #5 待 Docker 环境修复后关闭——届时
-`docs/version-matrix.md` postgresql ⚠️ → ✅，PG 套件群（含权限矩阵 60 用例）全量实跑。
+**遗留关闭（2026-08-31）**：DoD #5 已关闭——Docker Desktop 就绪后 PG 套件群（权限矩阵
+56 参数化用例 + 其余套件，合计 197 个 `*PgIntegrationTest` 用例）连真实 PostgreSQL 18.6
+全量实跑全绿；postgresql / Testcontainers 行 ⚠️ → ✅。PG 严格性暴露的 jsonb 审计详情
+缺陷、单例容器生命周期修正、测试桩/限流夹具等经验沉淀见 §11（D69–D74）。
 
 ---
 
-## 10. M7 容器基础镜像（Docker，待 spike 验证）
+## 10. M7 容器基础镜像（Docker，E1 spike 已验证 2026-08-31）
 
-> M7 设计 §4（D56）。本机 Docker 守护进程不可用（同 M1 postgresql ⚠️ 口径），
-> tag 为锁定目标值，Docker 就绪后执行 `docker build` 冒烟验证（镜像可构建 +
-> 健康检查转 UP）方可置 ✅。
+> M7 设计 §4（D56）/ GA 设计 E1。本机 Docker Desktop 29.7.2 就绪，`docker build`
+> 冒烟**全项通过**，tag + 摘要（digest）按实拉取值锁定。基础镜像经 DaoCloud 镜像加速
+> （`https://docker.m.daocloud.io`，Docker Hub 直连受限）预拉取，digest 与官方一致。
 
-| 镜像 | tag | 阶段 | 状态 | 备注 |
-|---|---|---|---|---|
-| maven | `3.9.16-eclipse-temurin-25` | builder | ⚠️ 待 Docker spike | 含 Maven 3.9.16 + JDK 25，跑 `mvn clean verify` 全门禁；与 Enforcer 基线 [25,26) / [3.9.16,) 一致 |
-| eclipse-temurin | `25-jre` | runtime | ⚠️ 待 Docker spike | JRE 25 运行时（glibc，支持 ZGC 与虚拟线程）；非 root 运行；内置 apt 装 curl 供 HEALTHCHECK |
+| 镜像 | tag | digest（RepoDigest） | 阶段 | 状态 | 备注 |
+|---|---|---|---|---|---|
+| maven | `3.9.16-eclipse-temurin-25` | `sha256:d67198007bb4…847753` | builder | ✅ | Maven 3.9.16 + JDK 25，跑 `mvn clean verify` 全门禁；与 Enforcer 基线 [25,26) / [3.9.16,) 一致 |
+| eclipse-temurin | `25-jre` | `sha256:f9e65324a37f…00a112` | runtime | ✅ | JRE 25（glibc，支持 ZGC 与虚拟线程）；apt 装 curl 供 HEALTHCHECK；非 root `pocket` 运行 |
+| postgres | `18`（18.6） | `sha256:4ef4dbc939d6…3c2280` | 运行期 DB / 测试 | ✅ | 生产 RDS 同版本基线；Testcontainers 与冒烟均连此镜像，Flyway V1–V10 落地 |
+| testcontainers/ryuk | `0.14.0` | `sha256:7c1a8a9a47c7…8cd28f0` | 测试资源回收 | ✅ | JVM 退出自动回收单例容器（D69） |
 
-**M7 构建验证项**（Docker 就绪后）：
-1. `docker build -t pocket-money-server:m7 .` 构建成功（builder 全门禁通过）。
-2. 容器启动后 `/actuator/health` 由 401/未就绪 → `UP`（HEALTHCHECK start-period 40s 内）。
-3. 分层 jar 生效（`dependencies` 层缓存命中，二次构建仅重打 `application` 层）。
-4. 容器内进程为非 root（`pocket` 用户），`/app/logs/gc.log` 可写。
+> 构建产物 `pocket-money-server:m7` 镜像 ID `sha256:32affc3f0e56…`（自身分层约
+> 319 MiB，叠加 temurin JRE 基础层）。digest 完整值可经 `docker inspect --format
+> '{{.RepoDigests}}' <image>` 复核。
+
+**M7 构建验证项（E1，全部实测通过）**：
+1. ✅ `docker build -t pocket-money-server:m7 .` 构建成功。builder 内 `mvn clean verify`
+   BUILD SUCCESS：Checkstyle 0 违规、SpotBugs BugInstance 0；Docker 依赖用例按
+   `disabledWithoutDocker` 自动跳过（RUN 步骤无 Docker socket，见 D74），宿主机
+   Docker 就绪时 197 个 PG 用例 + 全量 650 测试全绿。
+2. ✅ 容器连真实 `postgres:18` 启动：Flyway 迁移 V1→V10 全部成功；`/actuator/health`
+   返回 `{"status":"UP"}`（liveness/readiness 均 UP），Docker HEALTHCHECK 状态由
+   `starting` → `healthy`。
+3. ✅ 分层 jar 生效：`tools` jarmode 拆出 `dependencies`（166 三方 jar）/
+   `spring-boot-loader`（JarLauncher）/ `snapshot-dependencies`（空）/ `application`
+   （本工程 classes + 配置 + 迁移）四层分目录拷贝；二次构建 `go-offline`/`verify` 层
+   全 CACHED，仅 `application` 层重打，分层缓存命中实证。
+4. ✅ 容器内进程非 root：`id` = `uid=999(pocket) gid=999(pocket)`，PID 1 属主 `pocket`；
+   `/app` 与 `/app/logs` 归属 `pocket:pocket`，ZGC GC 日志写入 `/app/logs/gc.log`
+   （`Using The Z Garbage Collector`），应用日志 `/app/logs/pocket-money-server.log` 可写。
+5. ✅ E2E 业务链路（容器内 → 真实 PG）：注册 → `code:0`（userId/familyId/role=PARENT）、
+   登录签发 JWT、`/users/me` 回显脱敏手机号 `139****0001`；库内 `app_user.phone_encrypted`
+   / `phone_hash` 落库、无明文；`audit_log` 落 REGISTER/FAMILY_CREATE/LOGIN_SUCCESS 行。
+
+**Boot 4 分层 jar jarmode 变更（关键，D73）**：Spring Boot 4.1 移除 `layertools` jarmode
+（工件更名 `spring-boot-jarmode-tools`），`-Djarmode=layertools` 报 `Unsupported jarmode
+'layertools'`。Dockerfile 已改为 `-Djarmode=tools … extract --launcher --layers
+dependencies,spring-boot-loader,snapshot-dependencies,application`：默认 `extract` 为
+`app.jar + lib/` 扁平布局，须 `--launcher` 才输出 JarLauncher 可启动的展开布局、`--layers`
+才按层分目录供分层 `COPY`。
+
+**冷启动观测（环境产物，非缺陷）**：Docker Desktop VM（与宿主机共享 CPU/内存、virtiofs）
+内首启约 97s（Web 上下文初始化 ~44s，类加载/资源争用所致），HEALTHCHECK `start-period=40s`
+在该受限环境偏紧（先短暂 unhealthy 后转 healthy）。生产为 2 vCPU/4GB 独立 ECS，冷启动
+量级远低于此；如压测/演练（E5）实测接近阈值再回调 `start_period`，当前生产基线 40s 保留。
+
+---
+
+## 11. PG 实跑与容器镜像 spike 决策记录（D69–D74，2026-08-31）
+
+> Docker Desktop 就绪后 PG 套件首次真跑 + E1 镜像 spike 暴露的问题与沉淀。
+> 决策全局编号续 GA D68。
+
+| # | 决策 | 结论 | 依据 |
+|---|---|---|---|
+| D69 | PG 单例容器生命周期（**更正 M1-D11**） | M1-D11 设想的 `@Container @ServiceConnection` 静态容器**会每子类重启**：JUnit 扩展把容器登记进每个子类 class-scope 的 ExtensionContext store，子类结束即关闭，下一个子类重启得新映射端口，而 Spring 上下文缓存里的 HikariCP 仍指旧端口 → 连接被拒。改为：容器以**静态初始化块手动启动一次**（`DockerClientFactory.isDockerAvailable()` 守卫），全 JVM 一份、端口稳定、JVM 退出由 Ryuk 回收；`@ServiceConnection` 据此装配。跨类数据污染（固定号段手机号撞 200001、遗留 ACTIVE 规则进入结算聚合）由 `PgDatabaseResetListener.beforeTestClass`（TestExecutionListener，**先于子类 @BeforeAll**）`TRUNCATE … RESTART IDENTITY CASCADE` 清空业务表（保留 `flyway_schema_history`），等价 H2「每类一个内存库」 | 197 个 PG 用例单 JVM 全绿实测；端口漂移/跨类污染两类失败取证 |
+| D70 | 测试桩 Bean 同名替换（@ConditionalOnMissingBean 局限） | 嵌套 `@TestConfiguration` 在主 `@Configuration` **之后**处理，生产 Bean 的 `@ConditionalOnMissingBean` 评估时看不到后注册的测试桩 → 生产 Bean 不让步（HarmonyPushPort fail-fast 误触发「缺鸿蒙凭据」、Clock 固定时钟不生效）。对策：测试 `@Bean` 方法与生产 Bean **同名**（`harmonyPushPort` / `clock`）+ `spring.main.allow-bean-definition-overriding=true`，测试定义整体覆盖生产定义（生产工厂方法不执行，无真实 HMS/网络调用） | NotifyRelay/NotifyAudit 上下文加载失败、RuleSettlement/NotifyRuleExpiry BeanDefinitionOverrideException 取证 |
+| D71 | audit_log.detail 必须为合法 JSON（PG jsonb 严格性，**生产缺陷**） | `audit_log.detail` 是 PG `jsonb`（AuditLogMapper `CAST(? AS jsonb)`）。H2 对写入文本宽松，PG 严格要求合法 JSON——`RuleGrantExecutor`（`month=…,amount=…` 纯文本）与 `ReconciliationService`（`mismatchedAccounts=…` 纯文本）在 PG 报 `invalid input syntax for type json`，审计写入失败（AUDIT_WRITE_FAILED）。已改为合法 JSON（月/金额手拼 JSON 对象；`List<Long>.toString()` 形如 `[1, 2]` 即合法 JSON 数组），两处单测断言同步更新。**教训：H2 通过 ≠ PG 通过，凡落 jsonb 的 detail 一律构造合法 JSON。** | M2AuditTrail PG 实跑 `invalid input syntax for type json` 取证；修复后全绿 |
+| D72 | 集成测试限流夹具 | RateLimiter 为进程内 `ConcurrentMap<userId>`，单 JVM 全类共享、单用户高密度写触发 `100007 RATE_LIMITED` 误判（限流跨类累积许可）。测试 classpath `src/test/resources/application.properties` 置 `pocket-money.resilience.rate-limit.limit-for-period=100000`（**仅测试 classpath，不打包进运行时 jar**）；限流正确性由 `RateLimitFilterTest` / `RateLimitServiceTest` 直接构造 `RateLimitService` 断言（不经 Spring 绑定），覆盖不减。注：该属性须放 classpath properties 文件而非基座 `@SpringBootTest.properties`——子类自带 `@SpringBootTest` 不合并父注解属性 | M2 权限矩阵 / FamilyCrud / RuleCrud 等 100007 误判取证 |
+| D73 | Boot 4 分层 jar：layertools → tools jarmode | Boot 4.1 移除 `layertools` jarmode（工件 `spring-boot-jarmode-tools`）。`-Djarmode=tools … extract` 默认产出 `app.jar + lib/` 扁平布局；**须 `--launcher`** 才输出 JarLauncher 可启动的展开布局（`BOOT-INF/`+`META-INF/`+`org/`），**须 `--layers <list>`** 才按层分目录供分层 `COPY`。Dockerfile 已据此修正（详见 §10） | `docker build` 报 `Unsupported jarmode 'layertools'`；本地 `tools extract` 三种形态实测 |
+| D74 | 镜像构建内 Testcontainers 自动跳过 | `docker build` 的 RUN 步骤**不挂载 Docker socket**，Testcontainers 无法嵌套起容器；基座 `@Testcontainers(disabledWithoutDocker=true)` + `isDockerAvailable()` 守卫使 PG 套件在镜像构建内整体跳过（构建日志 Skipped），H2 + 单测 + Checkstyle/PMD/SpotBugs/JaCoCo 门禁照跑并全绿；PG 197 用例在**宿主机** `mvn verify`（Docker 就绪）实跑。不在镜像内挂 `/var/run/docker.sock`（DooD 引入容器逃逸面，违背最小权限） | builder 内 `mvn verify` BUILD SUCCESS 与宿主 650 测试全绿对比 |

@@ -16,11 +16,13 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import wyq.pocket.money.support.IdempotencyKeys;
 
 /**
  * M2 权限矩阵参数化集成测试（M2 设计 §12.2 / 附录 B：24 端点 × 4 身份）：
@@ -72,8 +74,17 @@ class M2PermissionMatrixPgIntegrationTest extends AbstractPostgresIntegrationTes
     /** 当前行前置准备的规则，行后尽力删除，避免受益人非归档规则数触顶 400004。 */
     private long preparedRuleId;
 
+    @LocalServerPort
+    private int serverPort;
+
+    /**
+     * PER_CLASS 共享夹具在 {@code @BeforeAll} 构建，早于基座 {@code @BeforeEach}
+     * 对 RestAssured 端口/幂等键过滤器的设置，故此处先行装配（见基座类 Javadoc）。
+     */
     @BeforeAll
     void buildFixtureOnce() {
+        RestAssured.port = serverPort;
+        RestAssured.replaceFiltersWith(IdempotencyKeys.uniqueKeyPerRequest());
         parentA = registerAndLogin(String.format("1381%07d", COUNTER.incrementAndGet()));
         String childAUsername = String.format("pgpm%08d", COUNTER.incrementAndGet());
         childAId = createChild(parentA, childAUsername);

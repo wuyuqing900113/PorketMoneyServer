@@ -88,9 +88,11 @@ public class RuleGrantExecutor {
                 rule.getAmount(), TxRefType.RULE_GRANT, record.getId(), null,
                 "包月规则发放 " + rule.getRuleName() + " " + month, null));
         grantRecordMapper.updateTransactionId(record.getId(), tx.getId());
+        // detail 落 audit_log.detail（PostgreSQL jsonb，须为合法 JSON；month/金额均为
+        // 安全字符无需转义），H2 宽松校验同样通过。
         auditService.record(new AuditEntry(null, AuditAction.RULE_GRANT_EXECUTED,
                 "MONEY_RULE", String.valueOf(rule.getId()),
-                "month=" + month + ";amount=" + rule.getAmount()));
+                "{\"month\":\"" + month + "\",\"amount\":\"" + rule.getAmount() + "\"}"));
         return true;
     }
 }

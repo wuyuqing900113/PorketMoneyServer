@@ -22,20 +22,27 @@ import wyq.pocket.money.support.ScriptedPushPort;
  * 通知投递重试状态机集成测试（M5 设计 §10.2 NotifyRelayPgIntegrationTest）：
  * PENDING → 成功 SENT；失败退避重试；超 max-retry 置 DEAD。
  * 以 {@link ScriptedPushPort} 编排 PushPort 结果，直查 notification_delivery 断言行状态。
+ *
+ * <p>{@code push.enabled=true} 令 {@code NotificationService} 落 PENDING delivery 行
+ * （生产语义），同时以同名 Bean {@code harmonyPushPort} 覆盖生产鸿蒙适配器：测试桩
+ * 按 Bean 名替换原定义，fail-fast 工厂不再执行，relay 全程只触达桩，零真实 HMS 调用。
+ * 名称覆盖需放开 Bean 定义覆写（{@code spring.main.allow-bean-definition-overriding}）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "JWT_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
         "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        "pocket-money.notify.push.enabled=true"
+        "pocket-money.notify.push.enabled=true",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 class NotifyRelayPgIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @TestConfiguration
     static class ScriptedPushConfig {
 
+        /** Bean 名与生产 {@code NotifyConfig.harmonyPushPort} 同名以整体替换为测试桩。 */
         @Bean
         @Primary
-        ScriptedPushPort scriptedPushPort() {
+        ScriptedPushPort harmonyPushPort() {
             return new ScriptedPushPort();
         }
     }

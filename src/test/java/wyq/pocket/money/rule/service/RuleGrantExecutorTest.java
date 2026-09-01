@@ -117,6 +117,7 @@ class RuleGrantExecutorTest {
         assertThat(auditCaptor.getValue().userId()).isNull();
         assertThat(auditCaptor.getValue().action())
                 .isEqualTo(AuditAction.RULE_GRANT_EXECUTED);
-        assertThat(auditCaptor.getValue().detail()).contains("month=2026-08");
+        // detail 为合法 JSON（audit_log.detail 在 PostgreSQL 为 jsonb）
+        assertThat(auditCaptor.getValue().detail()).contains("\"month\":\"2026-08\"");
     }
 }

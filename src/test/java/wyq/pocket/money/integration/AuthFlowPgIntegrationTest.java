@@ -62,6 +62,7 @@ class AuthFlowPgIntegrationTest extends AbstractPostgresIntegrationTest {
                 .then().statusCode(200).body("code", equalTo(0))
                 .body("data.expiresIn", greaterThan(0))
                 .body("data.mustChangePassword", equalTo(false))
-                .body("data.role", equalTo("PARENT"));
+                // 登录响应用户摘要嵌套于 data.user（与 /users/me 的顶层 role 区分）
+                .body("data.user.role", equalTo("PARENT"));
     }
 }

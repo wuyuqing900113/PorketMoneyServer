@@ -36,9 +36,18 @@ services:
       # ---- 可观测性（ARMS agent 以 -javaagent 挂载；SLS 由宿主机 Logtail 采集） ----
       # ARMS LicenseKey / 应用名等由部署脚本以 JAVA_TOOL_OPTIONS 注入，不在此硬编码
 
-      # ---- 业务开关（生产默认值；通知外部推送通道待拍板，保持 false） ----
-      AI_MOCK: "true"
-      NOTIFY_PUSH_ENABLED: "false"
+      # ---- AI（GA D67）：真实大模型 DeepSeek（经 Spring AI OpenAI 兼容协议） ----
+      AI_MOCK: "false"
+      SPRING_AI_MODEL_CHAT: "openai"
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      # DEEPSEEK_BASE_URL / DEEPSEEK_MODEL 有官方默认值，专有云/新模型可经环境变量覆盖
+
+      # ---- 外部推送（GA D68）：鸿蒙 Push Kit 服务端凭据 ----
+      NOTIFY_PUSH_ENABLED: "true"
+      HARMONY_PUSH_APP_ID: ${HARMONY_PUSH_APP_ID}
+      HARMONY_PUSH_CLIENT_ID: ${HARMONY_PUSH_CLIENT_ID}
+      HARMONY_PUSH_CLIENT_SECRET: ${HARMONY_PUSH_CLIENT_SECRET}
+      # HARMONY_PUSH_TOKEN_URL / HARMONY_PUSH_BASE_URL 有官方默认值，专有云可覆盖
     volumes:
       # 应用日志 + GC 日志持久化（供 SLS Logtail 采集 / 故障排查）
       - pocket-logs:/app/logs

@@ -20,8 +20,12 @@ COPY config ./config
 RUN mvn -B -ntp clean verify
 
 # 拆分 Spring Boot 分层 jar：dependencies / spring-boot-loader /
-# snapshot-dependencies / application，供 runtime 分层拷贝（D56 分层镜像）
-RUN java -Djarmode=layertools -jar target/PorketMoneyServer-*.jar extract \
+# snapshot-dependencies / application，供 runtime 分层拷贝（D56 分层镜像）。
+# Boot 4：layertools jarmode 已更名 tools（工件 spring-boot-jarmode-tools）；
+# 需 --launcher 输出可被 JarLauncher 启动的展开布局，并以 --layers 显式指定按层
+# 分目录（默认 extract 为 app.jar + lib/ 扁平布局，不按层分目录，无法分层 COPY）。
+RUN java -Djarmode=tools -jar target/PorketMoneyServer-*.jar extract --launcher \
+        --layers dependencies,spring-boot-loader,snapshot-dependencies,application \
         --destination target/extracted
 
 # ---------- Stage 2：运行时 ----------

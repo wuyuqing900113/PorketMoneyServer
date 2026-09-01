@@ -3,7 +3,7 @@
 > 上游依据：`mission.md`、`tech-stack.md`、`code-style-guide.md`、`roadmap.md`（里程碑总览 GA 行、M7 章节「达成 GA」、GA 后持续运营表、§1.3 量化约束、§7 约束追溯表）、`M0`–`M7-detailed-design.md`、`docs/version-matrix.md`
 > 文档版本：v1.0（2026-08-28，GA 发布工程基线）
 > 适用范围：GA（1.0 正式发布，roadmap 排期 2027-01 初）准入门、发布窗口与 GA 后运营衔接
-> M7 基线：`mvn clean verify` 全绿（Checkstyle/PMD/SpotBugs 0 违规，JaCoCo ≥ 80% BUNDLE，213+ 类）；Docker 多阶段镜像资产就绪（`Dockerfile` / `.dockerignore`，基础镜像 tag 待 Docker spike 锁定）；云效流水线七阶段（secret-scan → build-and-verify → code-inspection → archive → docker-build-push → deploy-test → deploy-prod-canary）就绪；灰度/回滚脚本（`scripts/deploy/`）就绪；文档五件套齐套（`docs/deploy`、`docs/ops`、`docs/dev`、`docs/security` + springdoc API 文档）；迁移 V1–V10 就绪；AI 四端口契约（`common/ai/`：`ChatPort`/`SpeechToTextPort`/`TextToSpeechPort`/`EmbeddingPort`）+ DeepSeek 适配器（`SpringAiChatPort`，D67）+ 进程内桩（`StubChatPort`）；通知 `PushPort` + 鸿蒙适配器（`HarmonyPushPort`，D68）+ `NoopPushPort`
+> M7 基线：`mvn clean verify` 全绿（Checkstyle/PMD/SpotBugs 0 违规，JaCoCo ≥ 80% BUNDLE，213+ 类）；Docker 多阶段镜像已 E1 spike 验证（`Dockerfile` / `.dockerignore`，基础镜像 tag+digest 锁定、非 root、HEALTHCHECK UP，见 `docs/version-matrix.md` §10/§11）；云效流水线七阶段（secret-scan → build-and-verify → code-inspection → archive → docker-build-push → deploy-test → deploy-prod-canary）就绪；灰度/回滚脚本（`scripts/deploy/`）就绪；文档五件套齐套（`docs/deploy`、`docs/ops`、`docs/dev`、`docs/security` + springdoc API 文档）；迁移 V1–V10 就绪；AI 四端口契约（`common/ai/`：`ChatPort`/`SpeechToTextPort`/`TextToSpeechPort`/`EmbeddingPort`）+ DeepSeek 适配器（`SpringAiChatPort`，D67）+ 进程内桩（`StubChatPort`）；通知 `PushPort` + 鸿蒙适配器（`HarmonyPushPort`，D68）+ `NoopPushPort`
 
 ---
 
@@ -193,20 +193,25 @@ M0–M7 各里程碑 DoD 在其详细设计中定义并在编码阶段闭环；G
 
 ### 5.4 目标环境执行项（本开发环境不可达，清单先行）
 
-| # | 执行项 | 判据 | 依据文档 |
-|---|---|---|---|
-| E1 | Docker 镜像构建 spike | 基础镜像 tag 锁定、镜像内 `mvn verify` 通过、非 root、HEALTHCHECK UP | `docs/version-matrix.md` §10 |
-| E2 | 阿里云资源开通 | ECS×2 / RDS / SLB / ACR / OSS / 安全组 / VPC | `docs/deploy/deployment-guide.md` §2 |
-| E3 | RDS 首启迁移 | Flyway V1–V10 无错 | deployment-guide §7 |
-| E4 | 10 TPS 压测终验 | P95 ≤ 500ms、错误率 ≤ 0.5%、连接池回落 | `scripts/jmeter/README.md` |
-| E5 | 金丝雀 + 回滚演练 | 5%→50%→100% 流程通；触发回滚后旧版恢复 | `docs/deploy/release-runbook.md` |
-| E6 | PITR 恢复演练 | 恢复到指定时间点，行数/余额不变式/加密读取通过 | `docs/ops/backup-recovery-runbook.md` §2 |
-| E7 | 告警链路演练 | 制造 5xx/健康失败，告警送达并处置 | `docs/ops/operations-handbook.md` §3 |
-| E8 | SLS 脱敏抽检 | 无明文手机号/身份证/银行卡/密钥 | operations-handbook §4 |
-| E9 | 首轮渗透测试 | 高危清零、中低危有处置单 | `docs/security/penetration-test-plan.md` |
-| E10 | ARMS/SLS 接入 | 核心接口指标上报、日志可查 | operations-handbook §1/§5 |
+| # | 执行项 | 判据 | 依据文档 | 状态 |
+|---|---|---|---|---|
+| E1 | Docker 镜像构建 spike | 基础镜像 tag 锁定、镜像内 `mvn verify` 通过、非 root、HEALTHCHECK UP | `docs/version-matrix.md` §10 | ✅ 已完成（2026-08-31，本机 Docker Desktop 29.7.2，非云目标环境） |
+| E2 | 阿里云资源开通 | ECS×2 / RDS / SLB / ACR / OSS / 安全组 / VPC | `docs/deploy/deployment-guide.md` §2 | ⛔ 待目标环境 |
+| E3 | RDS 首启迁移 | Flyway V1–V10 无错 | deployment-guide §7 | ⛔ 待目标环境 |
+| E4 | 10 TPS 压测终验 | P95 ≤ 500ms、错误率 ≤ 0.5%、连接池回落 | `scripts/jmeter/README.md` | ⛔ 待目标环境 |
+| E5 | 金丝雀 + 回滚演练 | 5%→50%→100% 流程通；触发回滚后旧版恢复 | `docs/deploy/release-runbook.md` | ⛔ 待目标环境 |
+| E6 | PITR 恢复演练 | 恢复到指定时间点，行数/余额不变式/加密读取通过 | `docs/ops/backup-recovery-runbook.md` §2 | ⛔ 待目标环境 |
+| E7 | 告警链路演练 | 制造 5xx/健康失败，告警送达并处置 | `docs/ops/operations-handbook.md` §3 | ⛔ 待目标环境 |
+| E8 | SLS 脱敏抽检 | 无明文手机号/身份证/银行卡/密钥 | operations-handbook §4 | ⛔ 待目标环境 |
+| E9 | 首轮渗透测试 | 高危清零、中低危有处置单 | `docs/security/penetration-test-plan.md` | ⛔ 待目标环境 |
+| E10 | ARMS/SLS 接入 | 核心接口指标上报、日志可查 | operations-handbook §1/§5 | ⛔ 待目标环境 |
 
-E1–E10 全部完成并归档证据是 Go 的硬条件（D64）。
+> **E1 已关闭（2026-08-31）**：本机 Docker Desktop 就绪后，E1 判据逐项实测通过——
+> 基础镜像 tag + digest 锁定（`docs/version-matrix.md` §10）、builder 内 `mvn verify` 全
+> 门禁通过（PG 用例因无 Docker socket 自动跳过、宿主机 650 测试全绿）、非 root `pocket`
+> 运行、HEALTHCHECK 转 healthy、对真实 postgres:18 跑通 Flyway V1–V10 与注册/登录/脱敏
+> E2E。过程修复 Boot 4 分层 jar jarmode 变更（layertools→tools，D73）。E2–E10 仍需阿里云
+> 目标环境。E1–E10 全部完成并归档证据是 Go 的硬条件（D64）。
 
 ---
 
@@ -269,7 +274,7 @@ E1–E10 全部完成并归档证据是 Go 的硬条件（D64）。
 | `CHANGELOG.md` | **GA 新增** | 1.0.0 发布说明（功能清单 + 已知限制） |
 | `docs/release/go-live-checklist.md` | **GA 新增** | 准入门检查单 + 签核表 + 运营节奏附录 |
 | `README.md` | M1 基线（滞后） | **刷新至 GA 基线**：里程碑表、文档索引、目录结构 |
-| `docs/version-matrix.md` | 持续维护 | E1 spike 后回填基础镜像 tag；无新增依赖 |
+| `docs/version-matrix.md` | 持续维护 | E1 已完成：基础镜像 tag+digest 锁定（§10）、postgresql ⚠️→✅、M1 DoD #5 关闭、PG 实跑/镜像 spike 决策 D69–D74（§11）；无新增依赖 |
 
 ---
 

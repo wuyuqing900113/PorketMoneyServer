@@ -22,20 +22,26 @@ import wyq.pocket.money.support.ScriptedPushPort;
  * 通知审计落库集成测试（M5 设计 §10.2 NotifyAuditPgIntegrationTest）：
  * 通知生成 / 投递成功 / 死信三类动作落 audit_log 可追溯，以 target_type 区分
  * 站内信（NOTIFICATION）与外部投递（NOTIFICATION_DELIVERY）。
+ *
+ * <p>{@code push.enabled=true} 令通知落 PENDING delivery 行；以同名 Bean
+ * {@code harmonyPushPort} 覆盖生产鸿蒙适配器为 {@link ScriptedPushPort}，fail-fast
+ * 工厂不再执行，审计链路零真实 HMS 调用。名称覆盖需放开 Bean 定义覆写。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "JWT_SECRET=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
         "DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        "pocket-money.notify.push.enabled=true"
+        "pocket-money.notify.push.enabled=true",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 class NotifyAuditPgIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @TestConfiguration
     static class ScriptedPushConfig {
 
+        /** Bean 名与生产 {@code NotifyConfig.harmonyPushPort} 同名以整体替换为测试桩。 */
         @Bean
         @Primary
-        ScriptedPushPort scriptedPushPort() {
+        ScriptedPushPort harmonyPushPort() {
             return new ScriptedPushPort();
         }
     }
